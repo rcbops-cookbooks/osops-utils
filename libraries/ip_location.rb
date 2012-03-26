@@ -8,12 +8,13 @@ class Chef::Recipe::IPManagement
   # find the local ip for a host on a specific network
   def self.get_ip_for_net(network, node)
     if not node[:osops_networks][network] then
-      Chef::Log.err("Can't find network #{network}")
+      error = "Can't find network #{network}"
+      Chef::Log.error(error)
+      raise error
     end
 
     net = IPAddr.new(node[:osops_networks][network])
     node[:network][:interfaces].each do |interface|
-      pp interface
       interface[1][:addresses].each do |k,v|
         if v[:family] == "inet6" or v[:family] == "inet" then
           addr=IPAddr.new(k)
@@ -24,7 +25,9 @@ class Chef::Recipe::IPManagement
       end
     end    
     
-    Chef::Log.err("Can't find address on network #{network} for node")
+    error = "Can't find address on network #{network} for node"
+    Chef::Log.error(error)
+    raise error
   end
 
   # find the realserver ips for a particular role
@@ -35,7 +38,9 @@ class Chef::Recipe::IPManagement
       candidates, something, result_count = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND role:#{role}")
 
       if result_count == 0 then
-        Chef::Log.err("Can't find any candidates for roled #{role} in environment #{node.chef_environment}")
+        error = "Can't find any candidates for roled #{role} in environment #{node.chef_environment}"
+        Chef::Log.error(error)
+        raise error
       end
 
       return candidates.map { |x| get_ip_for_net(network, x) }
@@ -43,15 +48,25 @@ class Chef::Recipe::IPManagement
   end
 
   # find the loadbalancer ip for a particular role
-  def self.get_access_ips_for_role(role, network, node)
+  def self.get_access_ip_for_role(role, network, node)
     if Chef::Config[:solo] then
       return node[:controller_ipaddress]
     else
       candidates, something, result_count = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND role:#{role}")
       if result_count == 1 then
-        return get_ip_for_net(network, candidates[0], node)
+        return get_ip_for_net(network, candidates[0])
+      elsif result_count == 0 then
+        error = "Can't find any candidates for roled #{role} in environment #{node.chef_environment}"
+        Chef::Log.error(error)
+        raise error
       else
-        return node[:osops_vips][role]
+        if not node[:osops_vips] or not node[:osops_vips][role] then
+          error = "Can't find lb vip (node[:osops_vips][#{role}]) in environment, with #{result_count} #{role} nodes"
+          Chef::Log.error(error)
+          raise error
+        else
+          return node[:osops_vips][role]
+        end
       end
     end
   end
