@@ -7,7 +7,7 @@ require "pp"
 class Chef::Recipe::IPManagement
   # find the local ip for a host on a specific network
   def self.get_ip_for_net(network, node)
-    if not node[:osops_networks][network] then
+    if not (node.has_key?(:osops_networks) and node[:osops_networks].has_key?(network)) then
       error = "Can't find network #{network}"
       Chef::Log.error(error)
       raise error
@@ -23,8 +23,8 @@ class Chef::Recipe::IPManagement
           end
         end
       end
-    end    
-    
+    end
+
     error = "Can't find address on network #{network} for node"
     Chef::Log.error(error)
     raise error
