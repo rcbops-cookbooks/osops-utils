@@ -33,7 +33,7 @@ class Chef::Recipe::IPManagement
   # find the realserver ips for a particular role
   def self.get_ips_for_role(role, network, node)
     if Chef::Config[:solo] then
-      return node[:controller_ipaddress]
+      return [self.get_ip_for_net(network, node)]
     else
       candidates, something, result_count = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND role:#{role}")
 
@@ -50,7 +50,7 @@ class Chef::Recipe::IPManagement
   # find the loadbalancer ip for a particular role
   def self.get_access_ip_for_role(role, network, node)
     if Chef::Config[:solo] then
-      return node[:controller_ipaddress]
+      return self.get_ip_for_net(network, node)
     else
       candidates, something, result_count = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND role:#{role}")
       if result_count == 1 then
