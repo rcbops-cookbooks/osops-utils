@@ -65,6 +65,12 @@ class Chef::Recipe::IPManagement
       return self.get_ip_for_net(network, node)
     else
       candidates, _, _ = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND roles:#{role}")
+      if candidates == nil or candidates.length == 0
+        if node["roles"].include?(role)
+          candidates = [ node ]
+        end
+      end
+
       if candidates.length == 1 then
         return get_ip_for_net(network, candidates[0])
       elsif candidates.length == 0 then
