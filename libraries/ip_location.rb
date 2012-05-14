@@ -42,7 +42,7 @@ class Chef::Recipe::IPManagement
     if Chef::Config[:solo] then
       return [self.get_ip_for_net(network, node)]
     else
-      candidates, _, _ = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND role:#{role}")
+      candidates, _, _ = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND roles:#{role}")
       if candidates.length <= 0
         error = "Can't find any candidates for role #{role} in environment #{node.chef_environment}"
         Chef::Log.error(error)
@@ -58,7 +58,7 @@ class Chef::Recipe::IPManagement
     if Chef::Config[:solo] then
       return self.get_ip_for_net(network, node)
     else
-      candidates, _, _ = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND role:#{role}")
+      candidates, _, _ = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND roles:#{role}")
       if candidates.length == 1 then
         return get_ip_for_net(network, candidates[0])
       elsif candidates.length == 0 then
