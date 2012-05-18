@@ -2,7 +2,85 @@
 
 require "chef/search/query"
 require "ipaddr"
+require "uri"
 require "pp"
+
+module RCB
+  # These are the new endpoint functions, that return much more information about
+  # endpoints.  Sufficient to configure something, I hope.  :/
+
+  # Get the bind information necessary for a service.
+  # ex:  IPManagement.get_bind_endpoint("keystone","admin")
+  # { "host" => "10.1.0.2",
+  #   "port" => 35357,
+  #   "scheme" => "http",
+  #   "path" => "/v2.0",
+  #   "uri" => "http://10.1.0.2:35357/v2.0"
+  #   "network" => "management"
+  #
+  # To define this resource, there must be a service entries like...
+  # node["keystone"]["services"]["admin"] =
+  # { "network" => "management", "port" => 35357 }
+  #
+  # IP address is derived from required network, unless overridden
+  # Protocol defaults to "http", path defaults to "/".  If a URI
+  # is specified, it overrides all other settings, otherwise it is
+  # composed from the individual components
+
+  def exit_error(msg)
+    Chef::Log.error(msg)
+    raise msg
+  end
+
+  def safe_deref(hash, path)
+    current = hash
+
+    path_ary = path.split(".")
+    path_ary.each do |k|
+      if current and current.has_key?(k)
+        current = current[k]
+      else
+        current = nil
+      end
+    end
+
+    current
+  end
+
+  def get_bind_endpoint(server, service)
+    retval = {}
+    if svc = safe_deref(node, "#{server}.services.#{service}")
+      retval["path"] = svc["path"] || "/"
+      retval["scheme"] = svc["scheme"] || "http"
+      retval["port"] = svc["port"] || "80"
+
+      # if we have an endpoint, we'll just parse the pieces
+      if svc.has_key?("uri")
+        uri = URI(svc["uri"])
+        ["path", "scheme", "port", "host"].each do |x|
+          retval.merge(x => uri.send(x))
+        end
+      elsif svc.has_key?("host")
+        retval["host"] = svc["host"]
+        retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+        retval["uri"] += retval["path"]
+      else
+        # we'll get the network from the osops network
+        retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(svc["network"], node)
+        retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+        retval["uri"] += retval["path"]
+      end
+
+      retval
+    else
+      exit_error("Cannot find server/service #{server}/#{service}")
+    end
+  end
+end
+
+class Chef::Recipe
+  include RCB
+end
 
 class Chef::Recipe::IPManagement
   # find the local ip for a host on a specific network
