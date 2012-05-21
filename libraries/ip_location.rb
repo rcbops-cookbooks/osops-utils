@@ -158,6 +158,14 @@ end
 class Chef::Recipe::IPManagement
   # find the local ip for a host on a specific network
   def self.get_ip_for_net(network, node)
+    if network == "all"
+      return "0.0.0.0"
+    end
+
+    if network == "localhost"
+      return "127.0.0.1"
+    end
+
     # remap the network if a map is present
     if node.has_key?("osops_networks") and
         node["osops_networks"].has_key?("mapping") and
