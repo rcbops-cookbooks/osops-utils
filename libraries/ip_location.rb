@@ -27,12 +27,12 @@ module RCB
   # is specified, it overrides all other settings, otherwise it is
   # composed from the individual components
 
-  def exit_error(msg)
+  def rcb_exit_error(msg)
     Chef::Log.error(msg)
     raise msg
   end
 
-  def safe_deref(hash, path)
+  def rcb_safe_deref(hash, path)
     current = hash
 
     path_ary = path.split(".")
@@ -47,9 +47,11 @@ module RCB
     current
   end
 
-  def get_bind_endpoint(server, service)
+  def get_bind_endpoint(server, service, nodeish=nil)
     retval = {}
-    if svc = safe_deref(node, "#{server}.services.#{service}")
+    nodeish = node unless nodeish
+
+    if svc = rcb_safe_deref(nodeish, "#{server}.services.#{service}")
       retval["path"] = svc["path"] || "/"
       retval["scheme"] = svc["scheme"] || "http"
       retval["port"] = svc["port"] || "80"
@@ -66,15 +68,86 @@ module RCB
         retval["uri"] += retval["path"]
       else
         # we'll get the network from the osops network
-        retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(svc["network"], node)
+        retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(svc["network"], nodeish)
         retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
       end
 
       retval
     else
-      exit_error("Cannot find server/service #{server}/#{service}")
+      Chef::Log.warn("Cannot find server/service #{server}/#{service}")
+      nil
     end
+  end
+
+  # Get the access endpoint for a role.
+  #
+  # If a role search returns no results, but the role is in our
+  # current runlist, use the bind endpoint from the local node
+  # attributes.
+  #
+  # If a role search returns more than one result, then return
+  # the LB config for that service
+  #
+  # If the role search returns exactly one result, then use
+  # the bind endpoint for the service according to that nodes attributes
+  #
+
+  def get_access_endpoint(role, server, service)
+    query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    result, _, _ = Chef::Search::Query.new.search(:node, query)
+
+    # if no query results, but role is in current runlist, use that
+    result = node if result.length == 0 and node["roles"].include?(role)
+
+    if result.length == 0
+      Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
+      nil
+    elsif result.length > 1
+      get_lb_endpoint(server,service)
+    else
+      get_bind_endpoint(server, service, result[0])
+    end
+  end
+
+  # return the endpoint info for all roles matching the
+  # the service.  This differs from access_endpoint, as it
+  # returns all the candidates, not merely the LB vip
+  #
+  def get_realserver_endpoints(role, server, service)
+    query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    result, _, _ = Chef::Search::Query.new.search(:node, query)
+
+    # if no query results, but role is in current runlist, use that
+    result = node if result.length == 0 and node["roles"].include?(role)
+
+    result.map { |nodeish| get_bind_endpoint(server, service, nodeish) }
+  end
+
+  # Get a specific node hash from another node by role
+  #
+  # In the event of a search with multiple results,
+  # it returns the first match
+  #
+  # In the event of a search with a no matches, if the role
+  # is held on the running node, then the current node hash
+  # values will be returned
+  #
+  def get_settings_by_role(role, settings)
+    query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    result, _, _ = Chef::Search::Query.new.search(:node, query)
+
+    result = node if result.length == 0 and node["roles"].include?(role)
+
+    if result.length == 0
+      nil
+    else
+      result[0][settings]
+    end
+  end
+
+  def get_lb_endpoint(server, service)
+    rcb_exit_error("LB endpoints not yet defined")
   end
 end
 
