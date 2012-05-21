@@ -98,7 +98,7 @@ module RCB
     result, _, _ = Chef::Search::Query.new.search(:node, query)
 
     # if no query results, but role is in current runlist, use that
-    result = node if result.length == 0 and node["roles"].include?(role)
+    result = [ node ] if result.length == 0 and node["roles"].include?(role)
 
     if result.length == 0
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
@@ -119,7 +119,7 @@ module RCB
     result, _, _ = Chef::Search::Query.new.search(:node, query)
 
     # if no query results, but role is in current runlist, use that
-    result = node if result.length == 0 and node["roles"].include?(role)
+    result = [ node ] if result.length == 0 and node["roles"].include?(role)
 
     result.map { |nodeish| get_bind_endpoint(server, service, nodeish) }
   end
@@ -137,7 +137,7 @@ module RCB
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
     result, _, _ = Chef::Search::Query.new.search(:node, query)
 
-    result = node if result.length == 0 and node["roles"].include?(role)
+    result = [ node ] if result.length == 0 and node["roles"].include?(role)
 
     if result.length == 0
       nil
