@@ -3,7 +3,6 @@
 require "chef/search/query"
 require "ipaddr"
 require "uri"
-require "pp"
 
 module RCB
   # These are the new endpoint functions, that return much more information about
@@ -45,6 +44,13 @@ module RCB
     end
 
     current
+  end
+
+  # stub until we can migrate out the IPManagement stuff
+  def get_ip_for_net(network, nodeish = nil)
+    nodeish = node unless nodeish
+
+    Chef::Recipe::IPManagement.get_ip_for_net(network, nodeish)
   end
 
   def get_bind_endpoint(server, service, nodeish=nil)
