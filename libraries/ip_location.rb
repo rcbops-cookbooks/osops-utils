@@ -103,8 +103,11 @@ module RCB
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
     result, _, _ = Chef::Search::Query.new.search(:node, query)
 
-    # if no query results, but role is in current runlist, use that
-    result = [ node ] if result.length == 0 and node["roles"].include?(role)
+    if result.length == 1 and result[0].name == node.name
+      result = [node]
+    elsif result.length == 0 and node["roles"].include?(role)
+      result = [node]
+    end
 
     if result.length == 0
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
@@ -140,15 +143,17 @@ module RCB
   # values will be returned
   #
   def get_settings_by_role(role, settings)
-    query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
-    result, _, _ = Chef::Search::Query.new.search(:node, query)
-
-    result = [ node ] if result.length == 0 and node["roles"].include?(role)
-
-    if result.length == 0
-      nil
+    if node["roles"].include?(role)
+      node[settings]
     else
-      result[0][settings]
+      query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+      result, _, _ = Chef::Search::Query.new.search(:node, query)
+
+      if result.length == 0
+        nil
+      else
+        result[0][settings]
+      end
     end
   end
 
@@ -254,4 +259,3 @@ class Chef::Recipe::IPManagement
     end
   end
 end
-
