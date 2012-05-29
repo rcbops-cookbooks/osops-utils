@@ -34,6 +34,7 @@ module RCB
   def rcb_safe_deref(hash, path)
     current = hash
 
+    Chef::Log.debug("Searching for #{path} in #{hash}")
     path_ary = path.split(".")
     path_ary.each do |k|
       if current and current.has_key?(k)
@@ -103,8 +104,13 @@ module RCB
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
     result, _, _ = Chef::Search::Query.new.search(:node, query)
 
-    # if no query results, but role is in current runlist, use that
-    result = [ node ] if result.length == 0 and node["roles"].include?(role)
+    if result.length == 1 and result[0].name == node.name
+      Chef::Log.debug("Found 1 result for #{role}/#{server}/#{service}, and it's me!")
+      result = [node]
+    elsif result.length == 0 and node["roles"].include?(role)
+      Chef::Log.debug("Found 0 result for #{role}/#{server}/#{service}, but I'm a role-holder!")
+      result = [node]
+    end
 
     if result.length == 0
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
@@ -140,15 +146,42 @@ module RCB
   # values will be returned
   #
   def get_settings_by_role(role, settings)
-    query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
-    result, _, _ = Chef::Search::Query.new.search(:node, query)
-
-    result = [ node ] if result.length == 0 and node["roles"].include?(role)
-
-    if result.length == 0
-      nil
+    if node["roles"].include?(role)
+      node[settings]
     else
-      result[0][settings]
+      query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+      result, _, _ = Chef::Search::Query.new.search(:node, query)
+
+      if result.length == 0
+        nil
+      else
+        result[0][settings]
+      end
+    end
+  end
+
+  # Get a specific node hash from another node by recipe
+  #
+  # In the event of a search with multiple results,
+  # it returns the first match
+  #
+  # In the event of a search with a no matches, if the role
+  # is held on the running node, then the current node hash
+  # values will be returned
+  #
+  def get_settings_by_recipe(recipe, settings)
+    if node["recipes"].include?(recipe)
+      node[settings]
+    else
+      query = "recipes:#{recipe} AND chef_environment:#{node.chef_environment}"
+      result, _, _ = Chef::Search::Query.new.search(:node, query)
+
+      if result.length == 0
+        Chef::Log.warn("Can't find node with recipe #{recipe}")
+        nil
+      else
+        result[0][settings]
+      end
     end
   end
 
@@ -254,4 +287,3 @@ class Chef::Recipe::IPManagement
     end
   end
 end
-
