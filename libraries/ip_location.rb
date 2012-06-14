@@ -49,7 +49,7 @@ module RCB
 
   # stub until we can migrate out the IPManagement stuff
   def get_ip_for_net(network, nodeish = nil)
-    _, ip = get_if_ip_for_net(network nodeish)
+    _, ip = get_if_ip_for_net(network, nodeish)
     return ip
   end
 
