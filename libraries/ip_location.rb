@@ -49,7 +49,7 @@ module RCB
 
   # stub until we can migrate out the IPManagement stuff
   def get_ip_for_net(network, nodeish = nil)
-    _, ip = get_if_ip_for_net(network nodeish)
+    _, ip = get_if_ip_for_net(network, nodeish)
     return ip
   end
 
@@ -164,7 +164,7 @@ module RCB
   # the service.  This differs from access_endpoint, as it
   # returns all the candidates, not merely the LB vip
   #
-  def get_realserver_endpoints(role, server, service)
+`  def get_realserver_endpoints(role, server, service)
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
     result, _, _ = Chef::Search::Query.new.search(:node, query)
 
