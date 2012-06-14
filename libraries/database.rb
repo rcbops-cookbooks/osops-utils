@@ -1,5 +1,5 @@
 module RCB
-  def create_db_and_user(db, service, db_name, username, pw)
+  def create_db_and_user(db, db_name, username, pw)
     db_info = nil
     case db
       when "mysql"
@@ -7,7 +7,7 @@ module RCB
         connection_info = {:host => mysql_info["bind_address"], :username => "root", :password => mysql_info["server_root_password"]}    
         
         # create database
-        mysql_database "create #{service} database" do
+        mysql_database "create #{db_name} database" do
           connection connection_info
           database_name db_name
           action :create
