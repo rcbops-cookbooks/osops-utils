@@ -9,21 +9,22 @@ Miscellaneous library functions for OpenStack. This currently includes:
 Requirements
 ============
 
-ipaddr
+Uses the Ruby libraries `chef/search/query`, `ipaddr` and `uri`
 
 Attributes
 ==========
 
-osops_networks is a list of network names and associated CIDR.  These
-are used in the get_ip functions.
+`osops_networks` is a list of network names and associated CIDR. These are used in the `get_ip` functions.
 
 Usage
 =====
 
-node[:osops_networks][:localnet] = 127.0.0.0/8
-node[:osops_networks][:management] = 10.0.1.0/24
+node['osops_networks']['localnet'] = 127.0.0.0/8
+
+node['osops_networks']['management'] = 10.0.1.0/24
 
 ip = get_ip_for_net("localnet")  # returns 127.0.0.1
+
 ip = get_ip_for_net("management") # returns the address on management, or error
 
 autoetchosts
@@ -42,15 +43,23 @@ License and Author
 ==================
 
 Author:: Justin Shepherd (<justin.shepherd@rackspace.com>)
+
 Author:: Jason Cannavale (<jason.cannavale@rackspace.com>)
+
 Author:: Ron Pedde (<ron.pedde@rackspace.com>)
+
 Author:: Joseph Breu (<joseph.breu@rackspace.com>)
+
 Author:: William Kelly (<william.kelly@rackspace.com>)
+
 Author:: Darren Birkett (<darren.birkett@rackspace.co.uk>)
+
 Author:: Evan Callicoat (<evan.callicoat@rackspace.com>)
+
 Author:: Matt Ray (<matt@opscode.com>)
 
 Copyright 2012 Rackspace, Inc.
+
 Copyright 2012 Opscode, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
