@@ -4,6 +4,7 @@ Description
 Miscellaneous library functions for osops packages.  These include:
 
  * ip address location
+ * simple /etc/hosts manipulation
 
 
 Requirements
@@ -17,7 +18,6 @@ Attributes
 osops_networks is a list of network names and associated CIDR.  These
 are used in the get_ip functions.
 
-
 Usage
 =====
 
@@ -28,3 +28,14 @@ ip = get_ip_for_net("localnet")  # returns 127.0.0.1
 ip = get_ip_for_net("management") # returns the address on management, or error
 
 
+autoetchosts
+
+Attributes
+==========
+
+none
+
+Usage
+=====
+
+include_recipe "osops::autoetchosts"
