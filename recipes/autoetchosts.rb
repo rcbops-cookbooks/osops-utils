@@ -3,6 +3,8 @@
 #
 # No Copyright.
 #
+# Based on http://community.opscode.com/cookbooks/autoetchosts
+# -*- which was based on...
 # Based on http://powdahound.com/2010/07/dynamic-hosts-file-using-chef
 # Use at your own risk.
 #
