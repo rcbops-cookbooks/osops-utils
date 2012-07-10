@@ -11,16 +11,20 @@
  
 # Find all nodes, sorting by Chef ID so their
 # order doesn't change between runs.
-hosts = search(:node, "*:*")
+if Chef::Config[:solo]
+  Chef::Log.warn("This recipe uses search. Chef Solo does not support search.")
+else
+  hosts = search(:node, "*:*")
   
-template "/etc/hosts" do
-  source "hosts.erb"
-  owner "root"
-  group "root"
-  mode 0644
-  variables(
-    :hosts => hosts,
-    :fqdn => node[:fqdn],
-    :hostname => node[:hostname]
-  )
+  template "/etc/hosts" do
+    source "hosts.erb"
+    owner "root"
+    group "root"
+    mode 0644
+    variables(
+      :hosts => hosts,
+      :fqdn => node[:fqdn],
+      :hostname => node[:hostname]
+    )
+  end
 end
