@@ -26,5 +26,6 @@ else
       :fqdn => node[:fqdn],
       :hostname => node[:hostname]
     )
+    only_if { hosts.length > 0 }
   end
 end
