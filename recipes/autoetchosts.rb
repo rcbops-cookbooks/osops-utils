@@ -28,6 +28,6 @@ else
       :fqdn => node[:fqdn],
       :hostname => node[:hostname]
     )
-    #only_if { hosts.length > 1 }
+    only_if { hosts.length > 1 }
   end
 end
