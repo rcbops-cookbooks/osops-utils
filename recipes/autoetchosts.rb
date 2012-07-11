@@ -14,6 +14,8 @@
 if Chef::Config[:solo]
   Chef::Log.warn("This recipe uses search. Chef Solo does not support search.")
 else
+  # not another one
+  node.save
   hosts = search(:node, "*:*")
   
   template "/etc/hosts" do
@@ -26,6 +28,6 @@ else
       :fqdn => node[:fqdn],
       :hostname => node[:hostname]
     )
-    only_if { hosts.length > 1 }
+    #only_if { hosts.length > 1 }
   end
 end
