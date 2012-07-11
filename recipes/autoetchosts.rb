@@ -16,18 +16,22 @@ if Chef::Config[:solo]
 else
   # not another one
   node.save
-  hosts = search(:node, "*:*")
+  hosts = search(:node, "chef_environment:#{node.chef_environment}")
   
-  template "/etc/hosts" do
-    source "hosts.erb"
-    owner "root"
-    group "root"
-    mode 0644
-    variables(
-      :hosts => hosts,
-      :fqdn => node[:fqdn],
-      :hostname => node[:hostname]
-    )
-    #only_if { hosts.length > 1 }
+  if hosts.length > 1
+    Chef::Log.info("Setting up /etc/hosts for #{hosts.length} entries")
+    template "/etc/hosts" do
+      source "hosts.erb"
+      owner "root"
+      group "root"
+      mode 0644
+      variables(
+        :hosts => hosts,
+        :fqdn => node[:fqdn],
+        :hostname => node[:hostname]
+      )
+    end
+  else
+    Chef::Log.info("Skipping /etc/hosts only found #{hosts.length} entries")
   end
 end
