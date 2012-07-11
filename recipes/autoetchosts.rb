@@ -16,7 +16,7 @@ if Chef::Config[:solo]
 else
   # not another one
   node.save
-  hosts = search(:node, "*:*")
+  hosts = search(:node, "*:* AND chef_environment:#{node.chef_environment}")
   
   if hosts.length > 1
     Chef::Log.info("Setting up /etc/hosts for #{hosts.length} entries")
