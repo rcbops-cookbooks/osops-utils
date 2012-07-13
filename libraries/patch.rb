@@ -18,8 +18,13 @@
 #
 
 class Chef::Recipe::Patch
-  def self.check_package_version(package,version)
-    case node["platform"]
+  def self.check_package_version(package,version,nodeish = nil)
+    nodeish = node unless nodeish
+    if not nodeish["nova"]["apply_patches"]
+          Chef::Log.info("package #{package} skipping hotfix for #{version} due to node settings")
+      return {}
+    end
+    case nodeish["platform"]
     when "ubuntu", "debian"
       Chef::ShellOut.new("apt-cache policy #{package}").run_command.stdout.each_line do |line|
         case line
