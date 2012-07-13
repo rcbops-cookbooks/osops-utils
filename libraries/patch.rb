@@ -19,11 +19,23 @@
 
 class Chef::Recipe::Patch
   def self.check_package_version(package,version)
-    Chef::ShellOut.new("apt-cache policy #{package}").run_command.stdout.each_line do |line|
-      case line
-      when /^\s{2}Installed: (.+)$/
-        Chef::Log.info("package #{package} requires a hotfix for version #{version}")
-        return $1 == version
+    case node["platform"]
+    when "ubuntu", "debian"
+      Chef::ShellOut.new("apt-cache policy #{package}").run_command.stdout.each_line do |line|
+        case line
+        when /^\s{2}Installed: (.+)$/
+          Chef::Log.info("package #{package} requires a hotfix for version #{version}")
+          return $1 == version
+        end
+      end
+    when "fedora", "centos", "rhel", "scientific"
+      #TODO(breu): need to test this for fedora
+      Chef::ShellOut.new("rpm -q --queryformat '%{VERSION}-%{RELEASE}\n' #{package}").run_command.stdout.each_line do |line|
+        case line
+        when /^([\w\d_.-]+)$/
+          Chef::Log.info("package #{package} requires a hotfix for version #{version}")
+          return $1 == version
+        end
       end
     end
   end
