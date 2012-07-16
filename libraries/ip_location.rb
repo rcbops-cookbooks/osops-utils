@@ -258,11 +258,13 @@ class Chef::Recipe::IPManagement
 
     net = IPAddr.new(node["osops_networks"][network])
     node["network"]["interfaces"].each do |interface|
-      interface[1]["addresses"].each do |k,v|
-        if v["family"] == "inet6" or v["family"] == "inet" then
-          addr=IPAddr.new(k)
-          if net.include?(addr) then
-            return k
+      if interface[1].has_key?("addresses") then
+        interface[1]["addresses"].each do |k,v|
+          if v["family"] == "inet6" or v["family"] == "inet" then
+            addr=IPAddr.new(k)
+            if net.include?(addr) then
+              return k
+            end
           end
         end
       end
