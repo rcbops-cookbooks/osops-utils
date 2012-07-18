@@ -234,7 +234,11 @@ module RCB
   end
 
   def get_lb_endpoint(server, service)
-    rcb_exit_error("LB endpoints not yet defined")
+    if retval = get_config_endpoint(server,service)
+      retval
+    else
+      rcb_exit_error("No valid explicit configuration found for #{server}/#{service}")
+    end
   end
 end
 
