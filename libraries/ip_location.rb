@@ -92,15 +92,15 @@ module RCB
     raise error
   end
 
-  def get_bind_endpoint(server, service, nodeish=nil)
+  def get_config_endpoint(server, service, nodeish=nil, partial = false)
     retval = {}
     nodeish = node unless nodeish
-
     if svc = rcb_safe_deref(nodeish, "#{server}.services.#{service}")
+      retval["network"] = svc["network"]
       retval["path"] = svc["path"] || "/"
       retval["scheme"] = svc["scheme"] || "http"
       retval["port"] = svc["port"] || "80"
-
+      
       # if we have an endpoint, we'll just parse the pieces
       if svc.has_key?("uri")
         uri = URI(svc["uri"])
@@ -111,13 +111,23 @@ module RCB
         retval["host"] = svc["host"]
         retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
-      else
-        # we'll get the network from the osops network
-        retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(svc["network"], nodeish)
-        retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
-        retval["uri"] += retval["path"]
       end
+    else
+      Chef::Log.info("No configured endpoint for #{server}/#{service}")
+      retval = nil unless partial
+    end
+    retval
+  end
+  
+  def get_bind_endpoint(server, service, nodeish=nil)
+    nodeish = node unless nodeish
+    retval = get_config_endpoint(server, service, nodeish, partial=true)
 
+    if not retval.empty?
+      # we'll get the network from the osops network
+      retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
+      retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+      retval["uri"] += retval["path"]
       retval
     else
       Chef::Log.warn("Cannot find server/service #{server}/#{service}")
