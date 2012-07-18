@@ -96,6 +96,7 @@ module RCB
     retval = {}
     nodeish = node unless nodeish
     if svc = rcb_safe_deref(nodeish, "#{server}.services.#{service}")
+      retval["network"] = svc["network"]
       retval["path"] = svc["path"] || "/"
       retval["scheme"] = svc["scheme"] || "http"
       retval["port"] = svc["port"] || "80"
@@ -124,7 +125,7 @@ module RCB
 
     if not retval.empty?
       # we'll get the network from the osops network
-      retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(svc["network"], nodeish)
+      retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
       retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
       retval["uri"] += retval["path"]
       retval
