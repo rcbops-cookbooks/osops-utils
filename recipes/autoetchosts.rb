@@ -1,12 +1,20 @@
 #
-# Cookbook Name:: autoetchosts
+# Cookbook Name:: osops-utils
+# Recipe:: autoetchosts
 #
-# No Copyright.
+# Copyright 2012, Rackspace Hosting
 #
-# Based on http://community.opscode.com/cookbooks/autoetchosts
-# -*- which was based on...
-# Based on http://powdahound.com/2010/07/dynamic-hosts-file-using-chef
-# Use at your own risk.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
  
 # Find all nodes, sorting by Chef ID so their
@@ -15,19 +23,50 @@ if Chef::Config[:solo]
   Chef::Log.warn("This recipe uses search. Chef Solo does not support search.")
 else
   # not another one
-  node.save
+  #node.save
   hosts = search(:node, "chef_environment:#{node.chef_environment}")
+
+  Chef::Log.info("osops-utils/autoetchosts: Setting up /etc/hosts for #{hosts.length} entries")
   
-  Chef::Log.info("Setting up /etc/hosts for #{hosts.length} entries")
-  template "/etc/hosts" do
-    source "hosts.erb"
-    owner "root"
-    group "root"
-    mode 0644
-    variables(
-      :hosts => hosts,
-      :fqdn => node[:fqdn],
-      :hostname => node[:hostname]
-    )
+  Chef::Log.info("osops-utils/autoetchosts: reading /etc/hosts")
+  hostsfile = Array.new
+  File.open("/etc/hosts", "r") do |infile|
+    marker=0
+    while (line = infile.gets)
+      if line =~ /^# \*\*\* START CHEF MANAGED HOSTS - DO NOT DELETE THIS MARKER \*\*\*$/i
+        marker=1
+      end
+      if (marker==1)
+        # drop this line on the ground
+      else
+        # store this line for later use
+        marker=0
+        hostsfile << line
+      end
+      if line =~ /^# \*\*\* END CHEF MANAGED HOSTS - DO NOT DELETE THIS MARKER\*\*\*$/i
+        # drop this line on the ground
+        marker=0
+      end
+    end
+  end
+
+  hostsfile << "# *** START CHEF MANAGED HOSTS - DO NOT DELETE THIS MARKER ***\n"
+  hostsfile << "# *** Do not edit anything between the START and END blocks ***\n"
+  hostsfile << "# *** Chef will overwrite anything between these blocks ***\n"
+  hosts.each do |host|
+    begin
+      ip = ::Chef::Recipe::IPManagement.get_ip_for_net("management",host)
+      stra = String.new("#{ip}    #{host["fqdn"]} #{host["hostname"]}\n")
+      hostsfile << stra
+    rescue
+      Chef::Log.info("osops-utils/autoetchosts: skipping this node because it doesn't have a network assigned yet")
+    end
+  end
+  hostsfile << "# *** END CHEF MANAGED HOSTS - DO NOT DELETE THIS MARKER***\n"
+
+  Chef::Log.info("osops-utils/autoetchosts: writing /etc/hosts")
+  f = File.open("/etc/hosts","w")
+  hostsfile.each do |line|
+    f.write(line)
   end
 end
