@@ -16,14 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+require 'tempfile'
+require 'fileutils'
  
 # Find all nodes, sorting by Chef ID so their
 # order doesn't change between runs.
 if Chef::Config[:solo]
   Chef::Log.warn("This recipe uses search. Chef Solo does not support search.")
 else
-  # not another one
-  #node.save
   hosts = search(:node, "chef_environment:#{node.chef_environment}")
 
   Chef::Log.info("osops-utils/autoetchosts: Setting up /etc/hosts for #{hosts.length} entries")
@@ -64,9 +65,14 @@ else
   end
   hostsfile << "# *** END CHEF MANAGED HOSTS - DO NOT DELETE THIS MARKER***\n"
 
-  Chef::Log.info("osops-utils/autoetchosts: writing /etc/hosts")
-  f = File.open("/etc/hosts","w")
+  f = Tempfile.new('hosts','/tmp')
+  tmppath = f.path
+  Chef::Log.info("osops-utils/autoetchosts: writing #{tmppath}")
   hostsfile.each do |line|
     f.write(line)
   end
+  f.close
+  Chef::Log.info("osops-utils/autoetchosts: moving #{tmppath} to /etc/hosts")
+  FileUtils.chmod(0644,tmppath);
+  FileUtils.mv(tmppath,'/etc/hosts', :force => true)
 end
