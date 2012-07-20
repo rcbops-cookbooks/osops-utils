@@ -21,15 +21,15 @@ class Chef::Recipe::Patch
   def self.check_package_version(package,version,nodeish = nil)
     nodeish = node unless nodeish
     if not nodeish["nova"]["apply_patches"]
-          Chef::Log.info("package #{package} skipping hotfix for #{version} due to node settings")
-      return {}
+      Chef::Log.info("osops-utils/patch: package #{package} skipping hotfix for #{version} due to node settings")
+      return false
     end
     case nodeish["platform"]
     when "ubuntu", "debian"
-      Chef::ShellOut.new("apt-cache policy #{package}").run_command.stdout.each_line do |line|
+      Chef::ShellOut.new("osops-utils/patch: apt-cache policy #{package}").run_command.stdout.each_line do |line|
         case line
         when /^\s{2}Installed: (.+)$/
-          Chef::Log.info("package #{package} requires a hotfix for version #{version}")
+          Chef::Log.info("osops-utils/patch: package #{package} requires a hotfix for version #{version}")
           return $1 == version
         end
       end
@@ -38,7 +38,7 @@ class Chef::Recipe::Patch
       Chef::ShellOut.new("rpm -q --queryformat '%{VERSION}-%{RELEASE}\n' #{package}").run_command.stdout.each_line do |line|
         case line
         when /^([\w\d_.-]+)$/
-          Chef::Log.info("package #{package} requires a hotfix for version #{version}")
+          Chef::Log.info("osops-utils/patch: package #{package} requires a hotfix for version #{version}")
           return $1 == version
         end
       end
