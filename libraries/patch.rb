@@ -21,8 +21,8 @@ class Chef::Recipe::Patch
   def self.check_package_version(package,version,nodeish = nil)
     nodeish = node unless nodeish
     if not nodeish["nova"]["apply_patches"]
-          Chef::Log.info("package #{package} skipping hotfix for #{version} due to node settings")
-      return {}
+      Chef::Log.info("package #{package} skipping hotfix for #{version} due to node settings")
+      return false
     end
     case nodeish["platform"]
     when "ubuntu", "debian"
