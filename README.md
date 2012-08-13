@@ -15,6 +15,7 @@ Attributes
 ==========
 
 `osops_networks` is a list of network names and associated CIDR. These are used in the `get_ip` functions.
+`osops`: `apply_patches` Set to true to apply RCB patches to installed packages.  Default is false.
 
 Usage
 =====
@@ -26,6 +27,8 @@ node['osops_networks']['management'] = 10.0.1.0/24
 ip = get_ip_for_net("localnet")  # returns 127.0.0.1
 
 ip = get_ip_for_net("management") # returns the address on management, or error
+
+node['osops']['apply_patches'] = true
 
 autoetchosts
 
