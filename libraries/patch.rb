@@ -29,9 +29,9 @@ class Chef::Recipe::Patch
       Chef::ShellOut.new("apt-cache policy #{package}").run_command.stdout.each_line do |line|
         case line
         when /^\s{2}Installed: (.+)$/
-          if $1.include? version
+          if $1 == version
               Chef::Log.info("osops-utils/patch: package #{package} requires a hotfix for version #{version}")
-              return $1.include? version
+              return $1 == version
           end
         end
       end
@@ -40,9 +40,9 @@ class Chef::Recipe::Patch
       Chef::ShellOut.new("rpm -q --queryformat '%{VERSION}-%{RELEASE}\n' #{package}").run_command.stdout.each_line do |line|
         case line
         when /^([\w\d_.-]+)$/
-          if $1.include? version
+          if $1 == version
               Chef::Log.info("osops-utils/patch: package #{package} requires a hotfix for version #{version}")
-              return $1.include? version
+              return $1 == version
           end
         end
       end
