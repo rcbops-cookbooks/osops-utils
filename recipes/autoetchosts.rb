@@ -55,12 +55,13 @@ else
   hostsfile << "# *** Do not edit anything between the START and END blocks ***\n"
   hostsfile << "# *** Chef will overwrite anything between these blocks ***\n"
   hosts.each do |host|
+    Chef::Log.info("osops-utils/autoetchosts: checking (#{host})")
     begin
       ip = ::Chef::Recipe::IPManagement.get_ip_for_net("management",host)
       stra = String.new("#{ip}    #{host["fqdn"]} #{host["hostname"]}\n")
       hostsfile << stra
     rescue
-      Chef::Log.info("osops-utils/autoetchosts: skipping this node because it doesn't have a network assigned yet")
+      Chef::Log.info("osops-utils/autoetchosts: skipping node (#{ip}) because it doesn't have a network assigned yet")
     end
   end
   hostsfile << "# *** END CHEF MANAGED HOSTS - DO NOT DELETE THIS MARKER***\n"
