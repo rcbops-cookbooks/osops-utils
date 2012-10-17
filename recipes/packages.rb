@@ -60,7 +60,7 @@ when "ubuntu","debian"
     uri "http://ppa.launchpad.net/osops-packaging/ppa/ubuntu"
     distribution node["lsb"]["codename"]
     components ["main"]
-    keyserver "keyserver.ubuntu.com"
+    keyserver "hkp://keyserver.ubuntu.com:80"
     key "53E8EA35"
     notifies :run, resources(:execute => "apt-get update"), :immediately
   end
