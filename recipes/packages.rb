@@ -96,6 +96,7 @@ when "ubuntu","debian"
         key "3B6F61A6"
         notifies :run, resources(:execute => "apt-get update"), :delayed
     end
+  end
 
 end
 
