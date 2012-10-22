@@ -17,6 +17,12 @@
 # limitations under the License.
 #
 
+if not node['package_component'].nil?
+    release = node['package_component']
+else
+    release = "essex-final"
+end
+
 case node["platform"]
 when "fedora", "redhat", "centos", "scientific", "amazon"
   # If this is a RHEL based system install the RCB prod and testing repos
@@ -53,6 +59,17 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     action :add
   end
 
+  # Stub out the testing repo for OpenStack Folsom packages on el6.  These packages are unsigned
+  if release == "folsom" 
+    yum_repository "epel-folsom-testing" do
+      repo_name "epel-folsom-testing"
+      description "EPEL OpenStack Folsom test packages"
+      url "http://repos.fedorapeople.org/repos/openstack/openstack-folsom/epel-6/"
+      enabled 1
+      action :add
+    end
+  end
+
 when "ubuntu","debian"
   include_recipe "apt"
 
@@ -64,6 +81,23 @@ when "ubuntu","debian"
     key "53E8EA35"
     notifies :run, resources(:execute => "apt-get update"), :immediately
   end
+
+  if release == "folsom"
+    apt_repository "folsom" do
+        # uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
+        # distribution "precise-proposed/folsom"
+        # components ["main"]
+        # keyserver "keyserver.ubuntu.com"
+        # key "5EDB1B62EC4926EA"
+        uri "http://ppa.launchpad.net/openstack-ubuntu-testing/folsom-trunk-testing/ubuntu"
+        distribution node["lsb"]["codename"]
+        components ["main"]
+        keyserver "keyserver.ubuntu.com"
+        key "3B6F61A6"
+        notifies :run, resources(:execute => "apt-get update"), :delayed
+    end
+  end
+
 end
 
 
