@@ -84,16 +84,16 @@ when "ubuntu","debian"
 
   if release == "folsom"
     apt_repository "folsom" do
-        uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
-        distribution "precise-proposed/folsom"
+        #uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
+        #distribution "precise-proposed/folsom"
+        #components ["main"]
+        #keyserver "keyserver.ubuntu.com"
+        #key "5EDB1B62EC4926EA"
+        uri "http://ppa.launchpad.net/openstack-ubuntu-testing/folsom-trunk-testing/ubuntu"
+        distribution node["lsb"]["codename"]
         components ["main"]
         keyserver "keyserver.ubuntu.com"
-        key "5EDB1B62EC4926EA"
-        # uri "http://ppa.launchpad.net/openstack-ubuntu-testing/folsom-trunk-testing/ubuntu"
-        # distribution node["lsb"]["codename"]
-        # components ["main"]
-        # keyserver "keyserver.ubuntu.com"
-        # key "3B6F61A6"
+        key "3B6F61A6"
         notifies :run, resources(:execute => "apt-get update"), :delayed
     end
   end
