@@ -59,14 +59,13 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     action :add
   end
 
-  # Stub out the testing repo for OpenStack Folsom packages on el6.  These packages are unsigned
+  # disable epel-folsom-testing and enable epel-testing
   if release == "folsom"
     yum_repository "epel-folsom-testing" do
-      repo_name "epel-folsom-testing"
-      description "EPEL OpenStack Folsom test packages"
-      url "http://repos.fedorapeople.org/repos/openstack/openstack-folsom/epel-6/"
+      action :remove
+    end
+    yum_repository "epel-testing" do
       enabled 1
-      action :add
     end
   end
 
