@@ -37,6 +37,20 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     yum_os="Fedora"
   end
 
+  # temporarily enable epel-testing for folsom packages until they are pushed
+  # into epel main
+    if release == "folsom"
+      if platform?("redhat", "fedora", "centos")
+        package "yum-utils" do
+          action :install
+        end
+        execute "enable-epel-testing" do
+          command "yum-config-manager --quiet --enable epel-testing"
+          action :run
+        end
+      end
+    end
+
   yum_key "RPM-GPG-RCB" do
     url "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key"
     action :add
@@ -59,15 +73,16 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     action :add
   end
 
-  # disable epel-folsom-testing and enable epel-testing
-  if release == "folsom"
-    yum_repository "epel-folsom-testing" do
-      action :remove
-    end
-    yum_repository "epel-testing" do
-      enabled 1
-    end
-  end
+  # Stub out the testing repo for OpenStack Folsom packages on el6.  These packages are unsigned
+#  if release == "folsom"
+#    yum_repository "epel-folsom-testing" do
+#      repo_name "epel-folsom-testing"
+#      description "EPEL OpenStack Folsom test packages"
+#      url "http://repos.fedorapeople.org/repos/openstack/openstack-folsom/epel-6/"
+#      enabled 1
+#      action :add
+#    end
+#  end
 
 when "ubuntu","debian"
   include_recipe "apt"
