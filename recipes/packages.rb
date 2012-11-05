@@ -65,7 +65,11 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
       action :remove
     end
     yum_repository "epel-testing" do
+      repo_name "epel-testing"
+      description "Extra Packages for Enterprise Linux 6 - Testing - $basearch"
+      mirrorlist "https://mirrors.fedoraproject.org/metalink?repo=testing-epel6&arch=$basearch"
       enabled 1
+      action :update
     end
   end
 
