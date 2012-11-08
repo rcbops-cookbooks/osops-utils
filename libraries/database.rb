@@ -29,6 +29,15 @@ module RCB
           privileges [:all]
           action :grant
         end
+        # grant privs to user in the database (bind address)
+        mysql_database_user username do
+          connection connection_info
+          password pw
+          database_name db_name
+          host "#{mysql_info["bind_address"]}"
+          privileges [:all]
+          action :grant
+        end
         db_info = mysql_info 
     end  
     db_info
