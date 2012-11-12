@@ -119,14 +119,16 @@ module RCB
       retval["path"] = svc["path"] || "/"
       retval["scheme"] = svc["scheme"] || "http"
       retval["port"] = svc["port"] || "80"
-      
+
       # if we have an endpoint, we'll just parse the pieces
-      if svc.has_key?("uri")
+      # Chef-10.12.0 is so broke that node.has_key? does not work
+      if svc.keys.include?("uri")
         uri = URI(svc["uri"])
         ["path", "scheme", "port", "host"].each do |x|
           retval.merge(x => uri.send(x))
         end
-      elsif svc.has_key?("host")
+      # Chef-10.12.0 is so broke that node.has_key? does not work
+      elsif svc.keys.include?("host")
         retval["host"] = svc["host"]
         retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
@@ -137,7 +139,7 @@ module RCB
     end
     retval
   end
-  
+
   def get_bind_endpoint(server, service, nodeish=nil)
     nodeish = node unless nodeish
     retval = get_config_endpoint(server, service, nodeish, partial=true)
@@ -253,6 +255,7 @@ module RCB
   end
 
   def get_lb_endpoint(server, service)
+    Chef::Log.info("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
     if retval = get_config_endpoint(server,service)
       retval
     else
