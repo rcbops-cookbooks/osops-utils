@@ -146,7 +146,9 @@ module RCB
 
     if not retval.empty?
       # we'll get the network from the osops network
-      retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
+      if not retval["host"]
+        retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
+      end
       retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
       retval["uri"] += retval["path"]
       retval
