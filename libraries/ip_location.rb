@@ -270,6 +270,10 @@ class Chef::Recipe
   include RCB
 end
 
+class Chef::Provider
+  include RCB
+end
+
 class Chef::Recipe::IPManagement
   # find the local ip for a host on a specific network
   def self.get_ip_for_net(network, node)
