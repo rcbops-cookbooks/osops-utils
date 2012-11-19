@@ -37,19 +37,13 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     yum_os="Fedora"
   end
 
-  # temporarily enable epel-testing for folsom packages until they are pushed
-  # into epel main
-    if release == "folsom"
-      if platform?("redhat", "fedora", "centos")
-        package "yum-utils" do
-          action :install
-        end
-        execute "enable-epel-testing" do
-          command "yum-config-manager --quiet --enable epel-testing"
-          action :run
-        end
-      end
+  if release == "essex-final"
+    if platform?("redhat", "fedora", "centos")
+      error = "Essex is no longer supported on RHEL based systems.  Please change package_component in your environment to 'folsom'"
+      Chef::Log.error(error)
+      raise error
     end
+  end
 
   yum_key "RPM-GPG-RCB" do
     url "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key"
