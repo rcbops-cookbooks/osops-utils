@@ -302,7 +302,7 @@ class Chef::Recipe::IPManagement
     node["network"]["interfaces"].each do |interface|
       if interface[1].has_key?("addresses") then
         interface[1]["addresses"].each do |k,v|
-          if v["family"] == "inet6" or v["family"] == "inet" then
+          if v["family"] == "inet6" or (v["family"] == "inet" and v["prefixlen"] != "32") then
             addr=IPAddr.new(k)
             if net.include?(addr) then
               return k
