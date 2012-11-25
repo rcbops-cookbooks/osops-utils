@@ -39,9 +39,15 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
 
   if release == "essex-final"
     if platform?("redhat", "fedora", "centos")
-      error = "Essex is no longer supported on RHEL based systems.  Please change package_component in your environment to 'folsom'"
-      Chef::Log.error(error)
-      raise error
+      package "yum-priorities" do
+        action :upgrade
+      end
+      template "/etc/yum.repos.d/epel-openstack-essex.repo" do
+        source "essex/epel-openstack-essex.repo.erb"
+        owner "root"
+        group "root"
+        mode "0644"
+      end
     end
   end
 
