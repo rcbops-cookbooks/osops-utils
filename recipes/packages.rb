@@ -43,7 +43,7 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
         action :upgrade
       end
       template "/etc/yum.repos.d/epel-openstack-essex.repo" do
-        source "essex/epel-openstack-essex.repo.erb
+        source "essex/epel-openstack-essex.repo.erb"
         owner "root"
         group "root"
         mode "0644"
