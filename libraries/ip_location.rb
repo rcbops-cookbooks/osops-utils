@@ -260,6 +260,8 @@ module RCB
     if node["recipes"].include?(recipe)
       node[settings]
     else
+      # force colon escaping if not passed from recipe
+      recipe.gsub!(/::/, "\\:\\:")
       query = "recipes:#{recipe} AND chef_environment:#{node.chef_environment}"
       result, _, _ = Chef::Search::Query.new.search(:node, query)
 
