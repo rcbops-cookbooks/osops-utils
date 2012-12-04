@@ -276,7 +276,7 @@ module RCB
 
   def get_lb_endpoint(server, service)
     Chef::Log.info("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
-    if retval = get_config_endpoint(server,service)
+    if retval = get_env_bind_endpoint(server,service)
       retval
     else
       rcb_exit_error("No valid explicit configuration found for #{server}/#{service}")
