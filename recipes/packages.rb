@@ -34,7 +34,7 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     yum_os="Fedora"
   end
 
-  if release == "essex-final"
+  if node['package_component'] == "essex-final"
     if platform?("redhat", "fedora", "centos")
       package "yum-priorities" do
         action :upgrade
@@ -71,7 +71,7 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
   end
 
   # Stub out the testing repo for OpenStack Folsom packages on el6.  These packages are unsigned
-#  if release == "folsom"
+#  if node['package_component'] == "folsom"
 #    yum_repository "epel-folsom-testing" do
 #      repo_name "epel-folsom-testing"
 #      description "EPEL OpenStack Folsom test packages"
@@ -93,7 +93,7 @@ when "ubuntu","debian"
     notifies :run, resources(:execute => "apt-get update"), :immediately
   end
 
-  if release == "folsom"
+  if node['package_component'] == "folsom"
     apt_repository "folsom" do
         uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
         distribution "precise-proposed/folsom"
