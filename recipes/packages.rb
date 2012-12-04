@@ -17,11 +17,8 @@
 # limitations under the License.
 #
 
-if not node['package_component'].nil?
-    release = node['package_component']
-else
-    release = "essex-final"
-end
+# Default to folsom package set
+node.set_unless['package_component'] = "folsom"
 
 case node["platform"]
 when "fedora", "redhat", "centos", "scientific", "amazon"
