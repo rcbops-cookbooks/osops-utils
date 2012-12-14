@@ -203,7 +203,7 @@ module RCB
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
       nil
     elsif result.length > 1
-      get_lb_endpoint(server,service)
+      get_lb_endpoint(role,server,service)
     else
       get_bind_endpoint(server, service, result[0])
     end
@@ -274,12 +274,46 @@ module RCB
     end
   end
 
-  def get_lb_endpoint(server, service)
-    Chef::Log.info("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
-    if retval = get_env_bind_endpoint(server,service)
-      retval
+  def get_lb_endpoint(role, server, service)
+    # Chef::Log.info("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
+    if vip = rcb_safe_deref(node, "#{server}.services.#{service}.vip")
+      Chef::Log.info("GET_LB_ENDPOINT: VIP Provided for #{server}.services.#{service}")
+      retval = get_config_endpoint(server, service)
+      if not retval.empty?
+        retval["host"] = vip
+        retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+        retval["uri"] += retval["path"]
+        retval
+      else
+        Chef::Log.warn("Cannot find server/service #{server}/#{service}")
+        nil
+      end
     else
-      rcb_exit_error("No valid explicit configuration found for #{server}/#{service}")
+      lb_role = node['lb_role'].nil? ? "haproxy" : node['lb_role']
+      Chef::Log.info("GET_LB_ENDPOINT: Searching for nodes with role[#{lb_role}]")
+      query = "roles:#{lb_role} AND chef_environment:#{node.chef_environment}"
+      result, _, _ = Chef::Search::Query.new.search(:node, query)
+      Chef::Log.info("GET_LB_ENDPOINT: #{result.length} Candidate node(s) found")
+      if result.length == 0
+        # FIXME(shep): just returning the first array item.. not sure what correct action should be
+        endpoints = get_realserver_endpoints(role,server,service)
+        endpoints[0]
+      elsif result.length == 1
+        retval = get_config_endpoint(server, service, result[0], partial=true)
+        if not retval.empty?
+          retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], result[0])
+          retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+          retval["uri"] += retval["path"]
+          retval
+        else
+          Chef::Log.warn("Cannot find server/service #{server}/#{service}")
+          nil
+        end
+      else
+        # TODO(shep): More than one lb.. need to recurse and find the haproxy.services.lb.vip
+        Chef::Log.info("*** Multiple role[#{lb_role}] is not supported yet")
+        nil
+      end
     end
   end
 end
