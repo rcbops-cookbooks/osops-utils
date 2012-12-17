@@ -312,6 +312,12 @@ module RCB
       query = "roles:#{lb_role} AND chef_environment:#{node.chef_environment}"
       result, _, _ = Chef::Search::Query.new.search(:node, query)
       Chef::Log.info("GET_LB_ENDPOINT: #{result.length} Candidate node(s) found")
+
+      if result.length == 0 and node["roles"].include?(lb_role)
+          Chef::Log.debug("Found 0 result for #{lb_role}, but I'm a role-holder!")
+          result = [node]
+      end
+
       if result.length == 0
           # # just returning the first array item.. not sure what correct action should be
           # endpoints = get_realserver_endpoints(role,server,service)
