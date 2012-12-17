@@ -98,7 +98,7 @@ when "ubuntu","debian"
         uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
         distribution "precise-proposed/folsom"
         components ["main"]
-        keyserver "keyserver.ubuntu.com"
+        keyserver "hkp://keyserver.ubuntu.com:80"
         key "5EDB1B62EC4926EA"
         #uri "http://ppa.launchpad.net/openstack-ubuntu-testing/folsom-trunk-testing/ubuntu"
         #distribution node["lsb"]["codename"]
