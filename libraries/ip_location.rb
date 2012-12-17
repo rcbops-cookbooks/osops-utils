@@ -232,20 +232,32 @@ module RCB
   # is held on the running node, then the current node hash
   # values will be returned
   #
-  def get_settings_by_role(role, settings)
-    if node["roles"].include?(role)
-      node[settings]
-    else
-      query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
-      result, _, _ = Chef::Search::Query.new.search(:node, query)
-
-      if result.length == 0
-        nil
-      else
-        result[0][settings]
+  # If includeme=false, the current node hash is removed from the results
+  # before the results are evaluated and returned
+  def get_settings_by_role(role, settings, includeme = true)
+    if includeme
+      if node["roles"].include?(role)
+        Chef::Log.debug('includeme is true so returning myself if I hold the role')
+        return node[settings]
       end
     end
+
+    query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    result, _, _ = Chef::Search::Query.new.search(:node, query)
+
+    if not includeme
+      # remove the calling node from the result array
+      Chef::Log.debug('includeme is false so removing myself from results')
+      result.delete_if {|v| v.name.include?("#{node['fqdn']}") }
+    end
+
+    if result.length == 0
+      nil
+    else
+      result[0][settings]
+    end
   end
+
 
   # Get a specific node hash from another node by recipe
   #
