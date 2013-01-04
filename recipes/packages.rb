@@ -37,7 +37,7 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
   if node['package_component'] == "essex-final"
     if platform?("redhat", "fedora", "centos")
       package "yum-priorities" do
-        action :upgrade
+        action :install
       end
       template "/etc/yum.repos.d/epel-openstack-essex.repo" do
         source "essex/epel-openstack-essex.repo.erb"
