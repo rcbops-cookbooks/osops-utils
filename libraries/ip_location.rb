@@ -78,7 +78,7 @@ module RCB
   end
 
   def get_if_ip_for_net(network, nodeish = nil)
-    nodish = node unless nodeish
+    nodeish = node unless nodeish
 
      if network == "all"
       return "0.0.0.0"
