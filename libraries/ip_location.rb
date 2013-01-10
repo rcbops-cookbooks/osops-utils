@@ -288,7 +288,8 @@ module RCB
 
   def get_lb_endpoint(role, server, service)
     # Chef::Log.info("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
-    if vip = rcb_safe_deref(node, "#{server}.services.#{service}.vip")
+    if vip = rcb_safe_deref(node, "vips.#{server}-#{service}")
+    # if vip = rcb_safe_deref(node, "#{server}.services.#{service}.vip")
       Chef::Log.info("GET_LB_ENDPOINT: VIP Provided for #{server}.services.#{service}")
       retval = get_config_endpoint(server, service)
       if not retval.empty?
@@ -301,58 +302,7 @@ module RCB
         nil
       end
     else
-      # check if lb_role is provided, or default to haproxy if not
-      lb_role = node['lb_role'].nil? ? "haproxy" : node['lb_role']
-
-      # need to break if we are getting the enpoint for lb_role
-      rcb_exit_error("Cannot find vip attribute for #{server}/#{service}") if role == lb_role
-
-      lb_role = node['lb_role'].nil? ? "haproxy" : node['lb_role']
-      Chef::Log.info("GET_LB_ENDPOINT: Searching for nodes with role[#{lb_role}]")
-      query = "roles:#{lb_role} AND chef_environment:#{node.chef_environment}"
-      result, _, _ = Chef::Search::Query.new.search(:node, query)
-      Chef::Log.info("GET_LB_ENDPOINT: #{result.length} Candidate node(s) found")
-
-      if result.length == 0 and node["roles"].include?(lb_role)
-          Chef::Log.debug("Found 0 result for #{lb_role}, but I'm a role-holder!")
-          result = [node]
-      end
-
-      if result.length == 0
-          # # just returning the first array item.. not sure what correct action should be
-          # endpoints = get_realserver_endpoints(role,server,service)
-          # endpoints[0]
-          rcb_exit_error("Found more than 1 #{server}/#{service} but found 0 nodes with role[#{lb_role}]")
-      elsif result.length == 1
-          retval = get_config_endpoint(server, service, result[0], partial=true)
-          if not retval.empty?
-              retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], result[0])
-              retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
-              retval["uri"] += retval["path"]
-              retval
-          else
-              Chef::Log.warn("Cannot find server/service #{server}/#{service}")
-              nil
-          end
-      else
-          # Multiple lb roles, need to find the vip attribute for the lb service
-          lb_config = get_lb_endpoint(lb_role, lb_role, 'lb')
-          if not lb_config.empty?
-              # now we need to munge back in the original server/service parameters
-              retval = get_config_endpoint(server, service)
-              if not retval.empty?
-                  retval["host"] = lb_config["host"]
-                  retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
-                  retval["uri"] += retval["path"]
-                  retval
-              else
-                  Chef::Log.warn("Cannot find server/service #{server}/#{service}")
-                  nil
-              end
-          else
-              rcb_exit_error("Something went horribly wrong!!")
-          end
-      end
+      rcb_exit_error("Found more than 1 #{server}/#{service} but vips.#{server}-#{service} is not defined.")
     end
   end
 end
