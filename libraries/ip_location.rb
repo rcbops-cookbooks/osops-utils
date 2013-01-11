@@ -291,7 +291,8 @@ module RCB
     if vip = rcb_safe_deref(node, "vips.#{server}-#{service}")
     # if vip = rcb_safe_deref(node, "#{server}.services.#{service}.vip")
       Chef::Log.info("GET_LB_ENDPOINT: VIP Provided for #{server}.services.#{service}")
-      retval = get_config_endpoint(server, service)
+      servers = get_realserver_endpoints(role, server, service)
+      retval = servers[0]
       if not retval.empty?
         retval["host"] = vip
         retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
