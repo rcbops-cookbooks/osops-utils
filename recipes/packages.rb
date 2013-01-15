@@ -105,7 +105,7 @@ when "ubuntu","debian"
       #keyserver "keyserver.ubuntu.com"
       #key "3B6F61A6"
       notifies :run, resources(:execute => "apt-get update"), :delayed
-      only_if node['package_component'] == "folsom"
+      only_if {node['package_component'] == "folsom"}
   end
 
 end
