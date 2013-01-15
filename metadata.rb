@@ -9,6 +9,6 @@ version          "1.0.12"
   supports os
 end
 
-%w{ apt yum }.each do |dep|
+%w{ apt yum sysctl }.each do |dep|
   depends dep
 end
