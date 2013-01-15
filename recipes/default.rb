@@ -16,3 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+# set some nice tcp timeouts for rabbitmq reconnects
+include_recipe "sysctl::default"
+sysctl_multi "rabbitmq" do
+      instructions("net.ipv4.tcp_keepalive_time" => "30",
+                   "net.ipv4.tcp_keepalive_intvl" => "1",
+                   "net.ipv4.tcp_keepalive_probes" => "5")
+end

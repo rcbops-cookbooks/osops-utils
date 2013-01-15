@@ -248,7 +248,7 @@ module RCB
     if not includeme
       # remove the calling node from the result array
       Chef::Log.debug('includeme is false so removing myself from results')
-      result.delete_if {|v| v.name.include?("#{node['fqdn']}") }
+      result.delete_if {|v| v.name.include?(node['fqdn']) }
     end
 
     if result.length == 0
