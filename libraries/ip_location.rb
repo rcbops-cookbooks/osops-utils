@@ -96,11 +96,13 @@ module RCB
 
     net = IPAddr.new(node["osops_networks"][network])
     nodeish["network"]["interfaces"].each do |interface|
-      interface[1]["addresses"].each do |k,v|
-        if v["family"] == "inet6" or v["family"] == "inet" then
-          addr=IPAddr.new(k)
-          if net.include?(addr) then
-            return [interface[0], k]
+      unless interface[1]['addresses'].nil?
+        interface[1]["addresses"].each do |k,v|
+          if v["family"] == "inet6" or v["family"] == "inet" then
+            addr=IPAddr.new(k)
+            if net.include?(addr) then
+              return [interface[0], k]
+            end
           end
         end
       end
