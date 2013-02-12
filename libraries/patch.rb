@@ -38,7 +38,7 @@ class Chef::Recipe::Patch
       end
     when "fedora", "centos", "redhat", "scientific", "amazon"
       #TODO(breu): need to test this for fedora
-      Chef::ShellOut.new("rpm -q --queryformat '%{VERSION}-%{RELEASE}\n' #{package}").run_command.stdout.each_line do |line|
+      Mixlib::ShellOut.new("rpm -q --queryformat '%{VERSION}-%{RELEASE}\n' #{package}").run_command.stdout.each_line do |line|
         case line
         when /^([\w\d_.-]+)$/
           if $1 == version
