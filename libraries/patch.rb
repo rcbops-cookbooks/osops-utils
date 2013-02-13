@@ -27,7 +27,7 @@ class Chef::Recipe::Patch
     end
     case nodeish["platform"]
     when "ubuntu", "debian"
-      Chef::ShellOut.new("apt-cache policy #{package}").run_command.stdout.each_line do |line|
+      Mixlib::ShellOut.new("apt-cache policy #{package}").run_command.stdout.each_line do |line|
         case line
         when /^\s{2}Installed: (.+)$/
           if $1 == version
