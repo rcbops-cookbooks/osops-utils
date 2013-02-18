@@ -289,10 +289,13 @@ module RCB
   end
 
   def get_lb_endpoint(role, server, service)
-    # Chef::Log.info("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
+    Chef::Log.debug("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
     if vip = rcb_safe_deref(node, "vips.#{server}-#{service}")
-    # if vip = rcb_safe_deref(node, "#{server}.services.#{service}.vip")
       Chef::Log.info("GET_LB_ENDPOINT: VIP Provided for #{server}.services.#{service}")
+    elsif vip = rcb_safe_deref(node, "external-vips.#{server}-#{service}")
+      Chef::Log.info("GET_LB_ENDPOINT: EXTERNAL VIP Provided for #{server}.services.#{service}")
+    end
+    if vip
       servers = get_realserver_endpoints(role, server, service)
       retval = servers[0]
       if not retval.empty?
@@ -308,6 +311,7 @@ module RCB
       rcb_exit_error("Found more than 1 #{server}/#{service} but vips.#{server}-#{service} is not defined.")
     end
   end
+
 end
 
 class Chef::Recipe
