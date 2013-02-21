@@ -5,10 +5,10 @@ description      "Installs/Configures osops-utils"
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
 version          "1.0.14"
 
-%w{ ubuntu fedora redhat centos }.each do |os|
+%w{ centos ubuntu }.each do |os|
   supports os
 end
 
-%w{ apt yum sysctl }.each do |dep|
+%w{ apt sysctl yum }.each do |dep|
   depends dep
 end
