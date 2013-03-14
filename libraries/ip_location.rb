@@ -260,6 +260,23 @@ module RCB
     end
   end
 
+  # search for a role and return how many there are in the environment.
+  #
+  # If includeme=false, the current node is removed from the  search result
+  # before the results are evaluated and returned
+  def get_role_count(role, includeme = true)
+
+    query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    result = Chef::Search::Query.new.search(:node, query)[0]
+
+    if not includeme
+      # remove the calling node from the result array
+      Chef::Log.debug('includeme is false so removing myself from results')
+      result.delete_if {|v| v.name == node.name }
+    end
+
+    result.length
+  end
 
   # Get a specific node hash from another node by recipe
   #
