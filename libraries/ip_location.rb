@@ -191,13 +191,18 @@ module RCB
 
   def get_access_endpoint(role, server, service)
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
-    result, _, _ = Chef::Search::Query.new.search(:node, query)
+    result = Chef::Search::Query.new.search(:node, query)[0]
 
-    if result.length == 1 and result[0].name == node.name
-      Chef::Log.debug("Found 1 result for #{role}/#{server}/#{service}, and it's me!")
-      result = [node]
+    if result.length == 1
+      if result[0].name == node.name
+        Chef::Log.debug("Found 1 result for #{role}/#{server}/#{service} from search, and it's me!")
+        result = [node]
+      elsif node["roles"].include?(role)
+        Chef::Log.debug("Found 1 result for #{role}/#{server}/#{service} from search (not me), and added myself as a role holder")
+        result << [node]
+      end
     elsif result.length == 0 and node["roles"].include?(role)
-      Chef::Log.debug("Found 0 result for #{role}/#{server}/#{service}, but I'm a role-holder!")
+      Chef::Log.debug("Found 0 result for #{role}/#{server}/#{service} from search, but I'm a role-holder!")
       result = [node]
     end
 
