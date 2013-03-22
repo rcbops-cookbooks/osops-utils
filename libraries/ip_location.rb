@@ -217,10 +217,13 @@ module RCB
   #
   def get_realserver_endpoints(role, server, service)
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
-    result, _, _ = Chef::Search::Query.new.search(:node, query)
+    result = Chef::Search::Query.new.search(:node, query)[0]
 
-    # if no query results, but role is in current runlist, use that
-    result = [ node ] if result.length == 0 and node["roles"].include?(role)
+    # if result doesn't contain current node, but role is in current runlist,
+    # add it to result
+    if not result.map { |n| n.name }.include?(node.name) and node["roles"].include?(role)
+      result << node
+    end
 
     result.map { |nodeish| get_bind_endpoint(server, service, nodeish) }
   end
