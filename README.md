@@ -50,8 +50,6 @@ This is part of the base role
 
 ### Attributes
 
-Package components are added based on the value of node['package_component'] which should be set at the environment level.
-
 
 ### Usage
 
