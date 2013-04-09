@@ -18,8 +18,6 @@
 #
 
 # Default to folsom package set
-node.set_unless['package_component'] = "folsom"
-
 case node["platform"]
 when "fedora", "redhat", "centos", "scientific", "amazon"
   # If this is a RHEL based system install the RCB prod and testing repos
@@ -27,25 +25,21 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
   major = node['platform_version'].to_i
   arch = node['kernel']['machine']
 
+  # TODO(breu): remove this repo when we go to GA on the EPEL Grizzly
+  # Packages
+  yum_repository "epel-openstack-grizzly" do
+    repo_name "epel-openstack-grizzly"
+    description "OpenStack Grizzly Repository for EPEL 6"
+    url "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
+    enabled 1
+    action :add
+  end
+
   if not platform?("fedora")
     include_recipe "yum::epel"
     yum_os="RedHat"
   else
     yum_os="Fedora"
-  end
-
-  if node['package_component'] == "essex-final"
-    if platform?("redhat", "fedora", "centos")
-      package "yum-priorities" do
-        action :install
-      end
-      template "/etc/yum.repos.d/epel-openstack-essex.repo" do
-        source "essex/epel-openstack-essex.repo.erb"
-        owner "root"
-        group "root"
-        mode "0644"
-      end
-    end
   end
 
   yum_key "RPM-GPG-RCB" do
@@ -70,17 +64,6 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     action :add
   end
 
-  # Stub out the testing repo for OpenStack Folsom packages on el6.  These packages are unsigned
-#  if node['package_component'] == "folsom"
-#    yum_repository "epel-folsom-testing" do
-#      repo_name "epel-folsom-testing"
-#      description "EPEL OpenStack Folsom test packages"
-#      url "http://repos.fedorapeople.org/repos/openstack/openstack-folsom/epel-6/"
-#      enabled 1
-#      action :add
-#    end
-#  end
-
 when "ubuntu","debian"
   include_recipe "apt"
 
@@ -93,19 +76,13 @@ when "ubuntu","debian"
     notifies :run, resources(:execute => "apt-get update"), :immediately
   end
 
-  apt_repository "folsom" do
+  apt_repository "grizzly" do
       uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
-      distribution "precise-proposed/folsom"
+      distribution "precise-proposed/grizzly"
       components ["main"]
       keyserver "hkp://keyserver.ubuntu.com:80"
       key "5EDB1B62EC4926EA"
-      #uri "http://ppa.launchpad.net/openstack-ubuntu-testing/folsom-trunk-testing/ubuntu"
-      #distribution node["lsb"]["codename"]
-      #components ["main"]
-      #keyserver "keyserver.ubuntu.com"
-      #key "3B6F61A6"
       notifies :run, resources(:execute => "apt-get update"), :immediately
-      only_if {node['package_component'] == "folsom"}
   end
 
 end
