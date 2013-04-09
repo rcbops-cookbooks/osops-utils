@@ -25,6 +25,16 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
   major = node['platform_version'].to_i
   arch = node['kernel']['machine']
 
+  # TODO(breu): remove this repo when we go to GA on the EPEL Grizzly
+  # Packages
+  yum_repository "epel-openstack-grizzly" do
+    repo_name "epel-openstack-grizzly"
+    description "OpenStack Grizzly Repository for EPEL 6"
+    url "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
+    enabled 1
+    action :add
+  end
+
   if not platform?("fedora")
     include_recipe "yum::epel"
     yum_os="RedHat"
