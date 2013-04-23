@@ -34,6 +34,7 @@ Uses the Ruby libraries `chef/search/query`, `ipaddr` and `uri`
 
 `osops_networks` is a list of network names and associated CIDR. These are used in the `get_ip` functions.
 `osops`: `apply_patches` Set to true to apply RCB patches to installed packages.  Default is false.
+`osops`: `do_package_upgrades` Set to true to upgrade certain packages during a chef run.  Default is false.
 
 
 ### Usage
