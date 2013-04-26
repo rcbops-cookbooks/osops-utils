@@ -78,7 +78,7 @@ when "ubuntu","debian"
 
   apt_repository "grizzly" do
       uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
-      distribution "precise-proposed/grizzly"
+      distribution "precise-updates/grizzly"
       components ["main"]
       keyserver "hkp://keyserver.ubuntu.com:80"
       key "5EDB1B62EC4926EA"
