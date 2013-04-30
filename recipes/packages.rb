@@ -85,7 +85,7 @@ when "ubuntu","debian"
   include_recipe "apt"
 
   apt_repository "osops" do
-    uri "http://ppa.launchpad.net/osops-packaging/ppa/ubuntu"
+    uri node["osops"]["apt_repository"]["osops-packages"]
     distribution node["lsb"]["codename"]
     components ["main"]
     keyserver "hkp://keyserver.ubuntu.com:80"
@@ -94,7 +94,7 @@ when "ubuntu","debian"
   end
 
   apt_repository "folsom" do
-      uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
+      uri node["osops"]["apt_repository"]["openstack"]
       distribution "precise-proposed/folsom"
       components ["main"]
       keyserver "hkp://keyserver.ubuntu.com:80"
