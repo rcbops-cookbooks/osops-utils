@@ -276,6 +276,12 @@ module RCB
       # remove the calling node from the result array
       Chef::Log.debug('includeme is false so removing myself from results')
       result.delete_if {|v| v.name == node.name }
+    else
+      # if result doesn't contain current node, but role is in current runlist,
+      # add it to result
+      if not result.map { |n| n.name }.include?(node.name) and node["roles"].include?(role)
+        result << node
+      end
     end
 
     result.length
