@@ -81,7 +81,7 @@ when "ubuntu","debian"
       distribution "precise-updates/grizzly"
       components ["main"]
       keyserver "hkp://keyserver.ubuntu.com:80"
-      key "5EDB1B62EC4926EA"
+      key "EC4926EA"
       notifies :run, resources(:execute => "apt-get update"), :immediately
   end
 
