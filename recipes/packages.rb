@@ -98,7 +98,7 @@ when "ubuntu","debian"
       distribution "precise-proposed/folsom"
       components ["main"]
       keyserver "hkp://keyserver.ubuntu.com:80"
-      key "5EDB1B62EC4926EA"
+      key "EC4926EA"
       #uri "http://ppa.launchpad.net/openstack-ubuntu-testing/folsom-trunk-testing/ubuntu"
       #distribution node["lsb"]["codename"]
       #components ["main"]
