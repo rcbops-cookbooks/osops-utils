@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: osops-utils
-# Recipe:: yum-rcb
+# Recipe:: packages
 #
 # Copyright 2012, Rackspace US, Inc.
 #
@@ -24,6 +24,7 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
 
   major = node['platform_version'].to_i
   arch = node['kernel']['machine']
+  server = "http://build.monkeypuppetlabs.com"
 
   # TODO(breu): remove this repo when we go to GA on the EPEL Grizzly
   # Packages
@@ -43,14 +44,14 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
   end
 
   yum_key "RPM-GPG-RCB" do
-    url "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key"
+    url "#{server}/repo/RPM-GPG-RCB.key"
     action :add
   end
 
   yum_repository "rcb" do
     repo_name "rcb"
     description "RCB Ops Stable Repo"
-    url "http://build.monkeypuppetlabs.com/repo/#{yum_os}/#{major}/#{arch}"
+    url "#{server}/repo/#{yum_os}/#{major}/#{arch}"
     key "RPM-GPG-RCB"
     action :add
   end
@@ -58,13 +59,13 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
   yum_repository "rcb-testing" do
     repo_name "rcb-testing"
     description "RCB Ops Testing Repo"
-    url "http://build.monkeypuppetlabs.com/repo-testing/#{yum_os}/#{major}/#{arch}"
+    url "#{server}/repo-testing/#{yum_os}/#{major}/#{arch}"
     key "RPM-GPG-RCB"
     enabled 1
     action :add
   end
 
-when "ubuntu","debian"
+when "ubuntu", "debian"
   include_recipe "apt"
 
   apt_repository "osops" do
@@ -73,18 +74,16 @@ when "ubuntu","debian"
     components ["main"]
     keyserver "hkp://keyserver.ubuntu.com:80"
     key "53E8EA35"
-    notifies :run, resources(:execute => "apt-get update"), :immediately
+    notifies :run, "execute[apt-get update]", :immediately
   end
 
   apt_repository "grizzly" do
-      uri node["osops"]["apt_repository"]["openstack"]
-      distribution "precise-updates/grizzly"
-      components ["main"]
-      keyserver "hkp://keyserver.ubuntu.com:80"
-      key "EC4926EA"
-      notifies :run, resources(:execute => "apt-get update"), :immediately
+    uri node["osops"]["apt_repository"]["openstack"]
+    distribution "precise-updates/grizzly"
+    components ["main"]
+    keyserver "hkp://keyserver.ubuntu.com:80"
+    key "EC4926EA"
+    notifies :run, "execute[apt-get update]", :immediately
   end
 
 end
-
-
