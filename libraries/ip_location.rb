@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 #
 # Cookbook Name:: osops-utils
 # library:: ip_location
@@ -80,24 +78,19 @@ module RCB
   def get_if_ip_for_net(network, nodeish = nil)
     nodeish = node unless nodeish
 
-     if network == "all"
-      return "0.0.0.0"
-    end
+    return "0.0.0.0" if network == "all"
+    return "127.0.0.1" if network == "localhost"
 
-    if network == "localhost"
-      return "127.0.0.1"
-    end
+    if !(nodeish.has_key?("osops_networks") and
+      nodeish["osops_networks"].has_key?(network)) then
 
-    if not (nodeish.has_key?("osops_networks") and nodeish["osops_networks"].has_key?(network)) then
-      error = "Can't find network #{network}"
-      Chef::Log.error(error)
-      raise error
+      rcb_exit_error "Can't find network #{network}"
     end
 
     net = IPAddr.new(node["osops_networks"][network])
     nodeish["network"]["interfaces"].each do |interface|
       unless interface[1]['addresses'].nil?
-        interface[1]["addresses"].each do |k,v|
+        interface[1]["addresses"].each do |k, v|
           if v["family"] == "inet6" or v["family"] == "inet" then
             addr=IPAddr.new(k)
             if net.include?(addr) then
@@ -108,12 +101,10 @@ module RCB
       end
     end
 
-    error = "Can't find address on network #{network} for node"
-    Chef::Log.error(error)
-    raise error
+    rcb_exit_error "Can't find address on network #{network} for node"
   end
 
-  def get_config_endpoint(server, service, nodeish=nil, partial = false)
+  def get_config_endpoint(server, service, nodeish=nil, partial=false)
     retval = {}
     nodeish = node unless nodeish
     if svc = rcb_safe_deref(nodeish, "#{server}.services.#{service}")
@@ -132,7 +123,8 @@ module RCB
       # Chef-10.12.0 is so broke that node.has_key? does not work
       elsif svc.keys.include?("host")
         retval["host"] = svc["host"]
-        retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+        retval["uri"] =
+          "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
       end
     else
@@ -144,12 +136,14 @@ module RCB
 
   def get_bind_endpoint(server, service, nodeish=nil)
     nodeish = node unless nodeish
-    retval = get_config_endpoint(server, service, nodeish, partial=true)
+    retval = get_config_endpoint(server, service, nodeish, true)
 
     if not retval.empty?
       # we'll get the network from the osops network
-      retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
-      retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+      retval["host"] =
+        Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
+      retval["uri"] =
+        "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
       retval["uri"] += retval["path"]
       retval
     else
@@ -160,14 +154,16 @@ module RCB
 
   def get_env_bind_endpoint(server, service, nodeish=nil)
     nodeish = node unless nodeish
-    retval = get_config_endpoint(server, service, nodeish, partial=true)
+    retval = get_config_endpoint(server, service, nodeish, true)
 
     if not retval.empty?
       # we'll get the network from the osops network
       if not retval["host"]
-        retval["host"] = Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
+        retval["host"] =
+          Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
       end
-      retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+      retval["uri"] =
+        "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
       retval["uri"] += retval["path"]
       retval
     else
@@ -192,12 +188,13 @@ module RCB
   def get_access_endpoint(role, server, service)
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
     result, _, _ = Chef::Search::Query.new.search(:node, query)
+    path = "#{role}/#{server}/#{service}"
 
     if result.length == 1 and result[0].name == node.name
-      Chef::Log.debug("Found 1 result for #{role}/#{server}/#{service}, and it's me!")
+      Chef::Log.debug("Found 1 result for #{path}, and it's me!")
       result = [node]
     elsif result.length == 0 and node["roles"].include?(role)
-      Chef::Log.debug("Found 0 result for #{role}/#{server}/#{service}, but I'm a role-holder!")
+      Chef::Log.debug("Found 0 result for #{path}, but I'm a role-holder!")
       result = [node]
     end
 
@@ -205,7 +202,7 @@ module RCB
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
       nil
     elsif result.length > 1
-      get_lb_endpoint(role,server,service)
+      get_lb_endpoint(role, server, service)
     else
       get_bind_endpoint(server, service, result[0])
     end
@@ -221,7 +218,9 @@ module RCB
 
     # if result doesn't contain current node, but role is in current runlist,
     # add it to result
-    if not result.map { |n| n.name }.include?(node.name) and node["roles"].include?(role)
+    if not result.map(&:name).include?(node.name) and
+      node["roles"].include?(role) then
+
       result << node
     end
 
@@ -242,7 +241,9 @@ module RCB
   def get_settings_by_role(role, settings, includeme = true)
     if includeme
       if node["roles"].include?(role)
-        Chef::Log.debug('includeme is true so returning myself if I hold the role')
+        Chef::Log.debug(
+          'includeme is true so returning myself if I hold the role')
+
         return node[settings]
       end
     end
@@ -253,7 +254,7 @@ module RCB
     if not includeme
       # remove the calling node from the result array
       Chef::Log.debug('includeme is false so removing myself from results')
-      result.delete_if {|v| v.name == node.name }
+      result.delete_if { |v| v.name == node.name }
     end
 
     if result.length == 0
@@ -275,11 +276,13 @@ module RCB
     if not includeme
       # remove the calling node from the result array
       Chef::Log.debug('includeme is false so removing myself from results')
-      result.delete_if {|v| v.name == node.name }
+      result.delete_if { |v| v.name == node.name }
     else
       # if result doesn't contain current node, but role is in current runlist,
       # add it to result
-      if not result.map { |n| n.name }.include?(node.name) and node["roles"].include?(role)
+      if not result.map(&:name).include?(node.name) and
+        node["roles"].include?(role) then
+
         result << node
       end
     end
@@ -315,18 +318,26 @@ module RCB
   end
 
   def get_lb_endpoint(role, server, service)
-    Chef::Log.debug("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
-    if vip = rcb_safe_deref(node, "vips.#{server}-#{service}")
-      Chef::Log.info("GET_LB_ENDPOINT: VIP Provided for #{server}.services.#{service}")
-    elsif vip = rcb_safe_deref(node, "external-vips.#{server}-#{service}")
-      Chef::Log.info("GET_LB_ENDPOINT: EXTERNAL VIP Provided for #{server}.services.#{service}")
+    Chef::Log.debug(
+      "*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
+
+    path = "#{server}.services.#{service}"
+    vip_path = "vips.#{server}-#{service}"
+    external_vip_path = "external-#{vip_path}"
+
+    if vip = rcb_safe_deref(node, vip_path)
+      Chef::Log.info("GET_LB_ENDPOINT: VIP Provided for #{path}")
+    elsif vip = rcb_safe_deref(node, external_vip_path)
+      Chef::Log.info("GET_LB_ENDPOINT: EXTERNAL VIP Provided for #{path}")
     end
+
     if vip
       servers = get_realserver_endpoints(role, server, service)
       retval = servers[0]
       if not retval.empty?
         retval["host"] = vip
-        retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+        retval["uri"] =
+          "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
         retval
       else
@@ -334,7 +345,8 @@ module RCB
         nil
       end
     else
-      rcb_exit_error("Found more than 1 #{server}/#{service} but vips.#{server}-#{service} is not defined.")
+      rcb_exit_error "Found more than 1 #{server}/#{service}" +
+        " but #{vip_path} is not defined."
     end
   end
 
@@ -349,34 +361,38 @@ class Chef::Provider
 end
 
 class Chef::Recipe::IPManagement
+
+  def self.rcb_exit_error(msg)
+    Chef::Log.error(msg)
+    raise msg
+  end
+
   # find the local ip for a host on a specific network
   def self.get_ip_for_net(network, node)
-    if network == "all"
-      return "0.0.0.0"
-    end
-
-    if network == "localhost"
-      return "127.0.0.1"
-    end
+    return "0.0.0.0" if network == "all"
+    return "127.0.0.1" if network == "localhost"
 
     # remap the network if a map is present
     if node.has_key?("osops_networks") and
-        node["osops_networks"].has_key?("mapping") and
-        node["osops_networks"]["mapping"].has_key?(network)
+      node["osops_networks"].has_key?("mapping") and
+      node["osops_networks"]["mapping"].has_key?(network) then
+
       network = node["osops_networks"]["mapping"][network]
     end
 
-    if not (node.has_key?("osops_networks") and node["osops_networks"].has_key?(network)) then
-      error = "Can't find network #{network}"
-      Chef::Log.error(error)
-      raise error
+    if !(node.has_key?("osops_networks") and
+      node["osops_networks"].has_key?(network)) then
+
+      rcb_exit_error "Can't find network #{network}"
     end
 
     net = IPAddr.new(node["osops_networks"][network])
     node["network"]["interfaces"].each do |interface|
       if interface[1].has_key?("addresses") then
-        interface[1]["addresses"].each do |k,v|
-          if v["family"] == "inet6" or (v["family"] == "inet" and v["prefixlen"] != "32") then
+        interface[1]["addresses"].each do |k, v|
+          if v["family"] == "inet6" or
+            (v["family"] == "inet" and v["prefixlen"] != "32") then
+
             addr=IPAddr.new(k)
             if net.include?(addr) then
               return k
@@ -386,9 +402,7 @@ class Chef::Recipe::IPManagement
       end
     end
 
-    error = "Can't find address on network #{network} for node"
-    Chef::Log.error(error)
-    raise error
+    rcb_exit_error "Can't find address on network #{network} for node"
   end
 
   # find the realserver ips for a particular role
@@ -396,7 +410,9 @@ class Chef::Recipe::IPManagement
     if Chef::Config[:solo] then
       return [self.get_ip_for_net(network, node)]
     else
-      candidates, _, _ = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND roles:#{role}")
+      candidates, _, _ = Chef::Search::Query.new.search(:node,
+        "chef_environment:#{node.chef_environment} AND roles:#{role}")
+
       if candidates == nil or candidates.length <= 0
         if node["roles"].include?(role)
           candidates = [node]
@@ -404,9 +420,10 @@ class Chef::Recipe::IPManagement
       end
 
       if candidates == nil or candidates.length <= 0
-        error = "Can't find any candidates for role #{role} in environment #{node.chef_environment}"
-        Chef::Log.error(error)
-        raise error
+        error = "Can't find any candidates for role #{role}" +
+          " in environment #{node.chef_environment}"
+
+        rcb_exit_error error
       end
 
       return candidates.map { |x| get_ip_for_net(network, x) }
@@ -418,24 +435,29 @@ class Chef::Recipe::IPManagement
     if Chef::Config[:solo] then
       return self.get_ip_for_net(network, node)
     else
-      candidates, _, _ = Chef::Search::Query.new.search(:node, "chef_environment:#{node.chef_environment} AND roles:#{role}")
+      candidates, _, _ = Chef::Search::Query.new.search(:node,
+        "chef_environment:#{node.chef_environment} AND roles:#{role}")
+
       if candidates == nil or candidates.length == 0
-        if node["roles"].include?(role)
-          candidates = [ node ]
-        end
+        candidates = [node] if node["roles"].include?(role)
       end
 
       if candidates.length == 1 then
         return get_ip_for_net(network, candidates[0])
       elsif candidates.length == 0 then
-        error = "Can't find any candidates for role #{role} in environment #{node.chef_environment}"
-        Chef::Log.error(error)
-        raise error
+        error = "Can't find any candidates for role #{role}" +
+          " in environment #{node.chef_environment}"
+
+        rcb_exit_error error
       else
-        if not node["osops_networks"] or not node["osops_networks"]["vips"] or not node["osops_networks"]["vips"][role] then
-          error = "Can't find lb vip for #{role} (osops_networks/vips/#{role}) in environment, with #{candidates.length} #{role} nodes"
-          Chef::Log.error(error)
-          raise error
+        if not node["osops_networks"] or not node["osops_networks"]["vips"] or
+          not node["osops_networks"]["vips"][role] then
+
+          error = "Can't find lb vip for #{role}" +
+            " (osops_networks/vips/#{role})" +
+            " in environment, with #{candidates.length} #{role} nodes"
+
+          rcb_exit_error error
         else
           return node["osops_networks"]["vips"][role]
         end
