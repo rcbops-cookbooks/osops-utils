@@ -18,36 +18,50 @@
 #
 
 class Chef::Recipe::Patch
-  def self.check_package_version(package,version,nodeish = nil)
+  def self.check_package_version(package, version, nodeish = nil)
     nodeish = node unless nodeish
     # TODO(breu): remove nova-apply_patches sometime in the future
-    if not (nodeish["osops"]["apply_patches"] or nodeish["nova"]["apply_patches"])
-      Chef::Log.info("osops-utils/patch: package #{package} skipping hotfix for #{version} due to node settings")
+    if !(nodeish["osops"]["apply_patches"] or nodeish["nova"]["apply_patches"])
+      Chef::Log.info("osops-utils/patch: package #{package} skipping hotfix" +
+        "for #{version} due to node settings")
+
       return false
     end
+
+    command, pattern = nil
+
     case nodeish["platform"]
     when "ubuntu", "debian"
-      Mixlib::ShellOut.new("apt-cache policy #{package}").run_command.stdout.each_line do |line|
-        case line
-        when /^\s{2}Installed: (.+)$/
-          if $1 == version
-              Chef::Log.info("osops-utils/patch: package #{package} requires a hotfix for version #{version}")
-              return $1 == version
-          end
-        end
-      end
+      command = "apt-cache policy #{package}"
+      pattern = /^\s{2}Installed: (.+)$/
     when "fedora", "centos", "redhat", "scientific", "amazon"
-      #TODO(breu): need to test this for fedora
-      Mixlib::ShellOut.new("rpm -q --queryformat '%{VERSION}-%{RELEASE}\n' #{package}").run_command.stdout.each_line do |line|
-        case line
-        when /^([\w\d_.-]+)$/
-          if $1 == version
-              Chef::Log.info("osops-utils/patch: package #{package} requires a hotfix for version #{version}")
-              return $1 == version
-          end
+      # TODO(breu): need to test this for fedora
+      command = "rpm -q --queryformat '%{VERSION}-%{RELEASE}\n' #{package}"
+      pattern = /^([\w.-]+)$/
+    end
+
+    if command && pattern
+      if _version_installed?(command, pattern, version)
+        Chef::Log.info("osops-utils/patch: package #{package} requires a" +
+          " hotfix for version #{version}")
+
+        return true
+      end
+    end
+
+    return false
+  end
+
+  def self._version_installed?(command, pattern, version)
+    Mixlib::ShellOut.new(command).run_command.stdout.each_line do |line|
+      case line
+      when pattern
+        if $1 == version
+          return true
         end
       end
     end
+
     return false
   end
 end
