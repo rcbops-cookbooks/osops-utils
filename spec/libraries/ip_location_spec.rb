@@ -8,14 +8,6 @@ describe RCB do
 
 
   describe "#get_if_ip_for_net" do
-    it "returns 0.0.0.0 for all" do
-      library.get_if_ip_for_net("all").should eq "0.0.0.0"
-    end
-
-    it "returns 127.0.0.1 for localhost" do
-      library.get_if_ip_for_net("localhost").should eq "127.0.0.1"
-    end
-
     context "with a Chef::Node" do
       before do
         node.set["network"]["interfaces"]["eth0"]["addresses"] = {
@@ -24,6 +16,14 @@ describe RCB do
         }
 
         library.stub("node").and_return(node)
+      end
+
+      it "returns 0.0.0.0 for all" do
+        library.get_if_ip_for_net("all").should eq "0.0.0.0"
+      end
+
+      it "returns 127.0.0.1 for localhost" do
+        library.get_if_ip_for_net("localhost").should eq "127.0.0.1"
       end
 
       it "logs and raises an error for no networks" do
@@ -68,14 +68,6 @@ describe RCB do
   end
 
   describe "#get_if_for_net" do
-    it "returns 0.0.0.0 for all" do
-      library.get_if_for_net("all").should eq "0.0.0.0"
-    end
-
-    it "returns 127.0.0.1 for localhost" do
-      library.get_if_for_net("localhost").should eq "127.0.0.1"
-    end
-
     context "with a Chef::Node" do
       before do
         node.set["network"]["interfaces"]["eth0"]["addresses"] = {
@@ -84,6 +76,14 @@ describe RCB do
         }
 
         library.stub("node").and_return(node)
+      end
+
+      it "returns 0.0.0.0 for all" do
+        library.get_if_for_net("all").should eq "0.0.0.0"
+      end
+
+      it "returns 127.0.0.1 for localhost" do
+        library.get_if_for_net("localhost").should eq "127.0.0.1"
       end
 
       it "logs and raises an error for no networks" do
