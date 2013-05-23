@@ -13,17 +13,66 @@ Please title the issue as follows:
 In the issue description, please include a longer description of the issue, along with any relevant log/command/error output.  
 If logfiles are extremely long, please place the relevant portion into the issue description, and link to a gist containing the entire logfile
 
-# Description
+Description
+===========
 
 Miscellaneous library functions and recipes for OpenStack. This currently includes:
 
- * ip address location
- * simple /etc/hosts manipulation
- * set up package repositories for various distributions
- * hot patching of package components
+* ip address location
+* simple /etc/hosts manipulation
+* set up package repositories for various distributions
+* hot patching of package components
 
 
-## IP Resources
+Requirements
+============
+
+Chef 11.0 or higher required (for Chef environment use).
+
+Platforms
+---------
+
+This cookbook is actively tested on the following platforms/versions:
+
+* Ubuntu-12.04
+* CentOS-6.3
+
+While not actively tested, this cookbook should also work the following platforms:
+
+* Debian/Mint derivitives
+* Amazon/Oracle/Scientific/RHEL
+
+Cookbooks
+---------
+
+The following cookbooks are dependencies:
+
+* apt
+* sysctl
+* yum
+
+
+Recipes
+=======
+
+default
+-------
+Installs rabbitmq related tcp settings in sysctl
+
+packages
+--------
+Installs various apt/yum repos
+
+autoetchosts
+------------
+Installs host file entries for all nodes in current chef environment
+
+
+Libraries
+=========
+
+ip_location
+-----------
 
 ### Requirements
 
@@ -39,50 +88,36 @@ Uses the Ruby libraries `chef/search/query`, `ipaddr` and `uri`
 
 ### Usage
 
-<pre><code>
+```ruby
 node['osops_networks']['localnet'] = 127.0.0.0/8
 node['osops_networks']['management'] = 10.0.1.0/24
 ip = get_ip_for_net("localnet")  # returns 127.0.0.1
 ip = get_ip_for_net("management") # returns the address on management, or error
 node['osops']['apply_patches'] = true
-</code>
-</pre>
+```
 
 
-## autoetchosts
+autoetchosts
+------------
 
 This is included by nova::nova-common
 
 
 ### Usage
 
+```ruby
 include_recipe "osops-utils::autoetchosts"
+```
 
 
-## Package Resources
-
-This is part of the base role
-
-
-### Attributes
-
-
-### Usage
-
-include_recipe "osops-utils::packages"
-
-
-## patching
+patching
+--------
 
 Provide a mechanism for hot patching a file that may be part of a package.  Any changes will most likely be overwritten when the package is updated.
 
-
-
 ### Usage
 
-Example
-<pre>
-<code>
+```ruby
 template "/usr/share/pyshared/nova/scheduler/filters/affinity_filter.py" do
   source "patches/affinity_filter.py.2012.1+stable~20120612-3ee026e-0ubuntu1.2"
   owner "root"
@@ -92,27 +127,31 @@ template "/usr/share/pyshared/nova/scheduler/filters/affinity_filter.py" do
   only_if { ::Chef::Recipe::Patch.check_package_version("nova-scheduler","2012.1+stable~20120612-3ee026e-0ubuntu1.2",node) ||
             ::Chef::Recipe::Patch.check_package_version("nova-scheduler","2012.1+stable~20120612-3ee026e-0ubuntu1.3",node) }
 end
-</code>
-</pre>
+```
 
 
-# License and Author
+Attributes
+==========
+* `default["osops"]["apply_patches"]` - Enable/disable the application of patches
+* `default["osops"]["do_package_upgrades"]` - Enable/disable automatic package upgrades
+* `default["osops"]["apt_repository"]["osops-packages"]` - Url of the osops packages repository
+* `default["osops"]["apt_repository"]["openstack"]` - Url of the openstack packages repository
+
+Templates
+=========
+* `essex/epel-openstack-essex.repo.erb` - OpenStack Essex Repo template for rhel
+
+License and Author
 ==================
 
 Author:: Justin Shepherd (<justin.shepherd@rackspace.com>)
-
 Author:: Jason Cannavale (<jason.cannavale@rackspace.com>)
-
 Author:: Ron Pedde (<ron.pedde@rackspace.com>)
-
 Author:: Joseph Breu (<joseph.breu@rackspace.com>)
-
 Author:: William Kelly (<william.kelly@rackspace.com>)
-
 Author:: Darren Birkett (<darren.birkett@rackspace.co.uk>)
-
 Author:: Evan Callicoat (<evan.callicoat@rackspace.com>)
-
+Author:: Chris Laco (<chris.laco@rackspace.com>)
 Author:: Matt Ray (<matt@opscode.com>)
 
 Copyright 2012 Rackspace US, Inc.
