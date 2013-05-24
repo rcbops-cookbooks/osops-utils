@@ -118,7 +118,7 @@ module RCB
       if svc.keys.include?("uri")
         uri = URI(svc["uri"])
         ["path", "scheme", "port", "host"].each do |x|
-          retval.merge(x => uri.send(x))
+          retval.merge!(x => uri.send(x))
         end
       # Chef-10.12.0 is so broke that node.has_key? does not work
       elsif svc.keys.include?("host")
