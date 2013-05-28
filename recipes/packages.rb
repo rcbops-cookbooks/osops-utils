@@ -86,4 +86,25 @@ when "ubuntu", "debian"
     notifies :run, "execute[apt-get update]", :immediately
   end
 
+  if node["developer_mode"].nil?
+    apt_repository "grizzly-proposed" do
+      action :remove
+      notifies :run, "execute[apt-get update]", :immediately
+    end
+  else
+    apt_repository "grizzly" do
+      uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
+      distribution "precise-proposed/grizzly"
+      components ["main"]
+      keyserver "hkp://keyserver.ubuntu.com:80"
+      key "EC4926EA"
+      notifies :run, "execute[apt-get update]", :immediately
+    end
+  end
+
+  apt_repository "folsom" do
+    action :remove
+    notifies :run, "execute[apt-get update]", :immediately
+  end
+
 end
