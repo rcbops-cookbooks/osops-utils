@@ -92,7 +92,7 @@ when "ubuntu", "debian"
       notifies :run, "execute[apt-get update]", :immediately
     end
   else
-    apt_repository "grizzly" do
+    apt_repository "grizzly-proposed" do
       uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
       distribution "precise-proposed/grizzly"
       components ["main"]
