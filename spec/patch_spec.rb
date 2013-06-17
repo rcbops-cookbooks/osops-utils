@@ -8,6 +8,26 @@ describe Chef::Recipe::Patch do
   let(:version) { "1.0" }
 
   describe ".chef_package_version" do
+    context "with missing attributes" do
+      let(:node) { Chef::Node.new }
+
+      before do
+        library.stub("node").and_return(node)
+      end
+
+      it "returns false if no osops attr exists" do
+        node.set["osops"]["apply_patches"] = false
+
+        library.check_package_version(package, version).should be_false
+      end
+
+      it "returns false if no nova attr exists" do
+        node.set["osops"]["apply_patches"] = false
+
+        library.check_package_version(package, version).should be_false
+      end
+    end
+
     context "with a Chef node" do
       let(:node) { Chef::Node.new }
 

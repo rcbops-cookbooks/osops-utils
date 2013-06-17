@@ -21,7 +21,10 @@ class Chef::Recipe::Patch
   def self.check_package_version(package, version, nodeish = nil)
     nodeish = node unless nodeish
     # TODO(breu): remove nova-apply_patches sometime in the future
-    if !(nodeish["osops"]["apply_patches"] or nodeish["nova"]["apply_patches"])
+    #if !(nodeish["osops"]["apply_patches"] or nodeish["nova"]["apply_patches"])
+    if (nodeish["osops"] && nodeish["osops"]["apply_patches"] == false) &&
+      (nodeish["nova"] && nodeish["nova"]["apply_patches"] == false)
+
       Chef::Log.info("osops-utils/patch: package #{package} skipping hotfix" +
         "for #{version} due to node settings")
 
