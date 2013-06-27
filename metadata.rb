@@ -1,3 +1,4 @@
+name             "osops-utils"
 maintainer       "Rackspace Hosting"
 maintainer_email "osops@lists.launchpad.net"
 license          "Apache 2.0"

@@ -90,7 +90,7 @@ when "ubuntu","debian"
     components ["main"]
     keyserver "hkp://keyserver.ubuntu.com:80"
     key "53E8EA35"
-    notifies :run, resources(:execute => "apt-get update"), :immediately
+    notifies :run, "execute[apt-get update]", :immediately
   end
 
   apt_repository "folsom" do
@@ -104,7 +104,7 @@ when "ubuntu","debian"
       #components ["main"]
       #keyserver "keyserver.ubuntu.com"
       #key "3B6F61A6"
-      notifies :run, resources(:execute => "apt-get update"), :immediately
+      notifies :run, "execute[apt-get update]", :immediately
       only_if {node['package_component'] == "folsom"}
   end
 
