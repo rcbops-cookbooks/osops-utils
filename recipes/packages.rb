@@ -85,26 +85,26 @@ when "ubuntu","debian"
   include_recipe "apt"
 
   apt_repository "osops" do
-    uri "http://ppa.launchpad.net/osops-packaging/ppa/ubuntu"
+    uri node["osops"]["apt_repository"]["osops-packages"]
     distribution node["lsb"]["codename"]
     components ["main"]
     keyserver "hkp://keyserver.ubuntu.com:80"
     key "53E8EA35"
-    notifies :run, resources(:execute => "apt-get update"), :immediately
+    notifies :run, "execute[apt-get update]", :immediately
   end
 
   apt_repository "folsom" do
-      uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
+      uri node["osops"]["apt_repository"]["openstack"]
       distribution "precise-proposed/folsom"
       components ["main"]
       keyserver "hkp://keyserver.ubuntu.com:80"
-      key "5EDB1B62EC4926EA"
+      key "EC4926EA"
       #uri "http://ppa.launchpad.net/openstack-ubuntu-testing/folsom-trunk-testing/ubuntu"
       #distribution node["lsb"]["codename"]
       #components ["main"]
       #keyserver "keyserver.ubuntu.com"
       #key "3B6F61A6"
-      notifies :run, resources(:execute => "apt-get update"), :immediately
+      notifies :run, "execute[apt-get update]", :immediately
       only_if {node['package_component'] == "folsom"}
   end
 
