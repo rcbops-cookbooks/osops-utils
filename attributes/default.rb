@@ -23,3 +23,24 @@ default["osops"]["apt_repository"]["osops-packages"] =
   "http://ppa.launchpad.net/osops-packaging/ppa/ubuntu"
 default["osops"]["apt_repository"]["openstack"] =
   "http://ubuntu-cloud.archive.canonical.com/ubuntu"
+
+
+# platform defaults
+case platform_family
+when "rhel"
+  default["osops"]["platform"] = {
+    "common_packages" => ["python-eventlet", "python-ceilometerclient",
+      "python-cinderclient", "python-glanceclient", "python-keystoneclient",
+      "python-novaclient", "python-quantumclient", "MySQL-python",
+      "python-warlock", "curl" ],
+    "package_options" => ""
+  }
+when "debian"
+  default["osops"]["platform"] = {
+    "common_packages" => ["python-eventlet", "python-ceilometerclient",
+      "python-cinderclient", "python-glanceclient", "python-keystoneclient",
+      "python-novaclient", "python-quantumclient", "python-mysqldb",
+      "python-warlock", "curl" ],
+    "package_options" => "-o Dpkg::Options::='--force-confold' -o Dpkg::Options::='--force-confdef'"
+  }
+end

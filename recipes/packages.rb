@@ -16,8 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+#
 
-# Default to folsom package set
 case node["platform"]
 when "fedora", "redhat", "centos", "scientific", "amazon"
   # If this is a RHEL based system install the RCB prod and testing repos
@@ -108,3 +108,15 @@ when "ubuntu", "debian"
   end
 
 end
+
+# install common packages
+platform_options = node["osops"]["platform"]
+pkgs = platform_options["common_packages"]
+
+pkgs.each do |pkg|
+  package pkg do
+    action node["osops"]["do_package_upgrades"] == true ? :upgrade : :install
+    options platform_options["package_overrides"]
+  end
+end
+
