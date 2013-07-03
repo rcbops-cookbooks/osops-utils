@@ -32,7 +32,7 @@ when "rhel"
     "common_packages" => ["python-eventlet", "python-ceilometerclient",
       "python-cinderclient", "python-glanceclient", "python-keystoneclient",
       "python-novaclient", "python-quantumclient", "MySQL-python",
-      "python-warlock", "curl" ],
+      "python-warlock", "curl", "python-keystone" ],
     "package_options" => ""
   }
 when "debian"
@@ -40,7 +40,7 @@ when "debian"
     "common_packages" => ["python-eventlet", "python-ceilometerclient",
       "python-cinderclient", "python-glanceclient", "python-keystoneclient",
       "python-novaclient", "python-quantumclient", "python-mysqldb",
-      "python-warlock", "curl" ],
+      "python-warlock", "curl", "python-keystone" ],
     "package_options" => "-o Dpkg::Options::='--force-confold' -o Dpkg::Options::='--force-confdef'"
   }
 end
