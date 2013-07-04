@@ -145,9 +145,11 @@ module RCB
           Chef::Recipe::IPManagement.get_ip_for_net(
             retval["network"], nodeish)
       end
-      retval["uri"] =
-        "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
-      retval["uri"] += retval["path"]
+      if not retval.include? "uri"
+        retval["uri"] =
+          "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+        retval["uri"] += retval["path"]
+      end
       retval
     else
       Chef::Log.warn("Cannot find server/service #{server}/#{service}")
