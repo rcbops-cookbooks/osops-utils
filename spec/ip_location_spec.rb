@@ -298,58 +298,6 @@ describe RCB do
     end
   end
 
-  describe "#get_env_bind_endpoint" do
-    let(:service_info) do
-      {
-        "network" => "management",
-        "path" => "/endpoint",
-        "scheme" => "http",
-        "port" => 80,
-        "uri" => "http://localhost:80/endpoint"
-      }
-    end
-
-    before do
-      node.set["myserver"]["services"]["myservice"] = service_info
-      node.set["network"]["interfaces"]["eth0"]["addresses"] = {
-        "172.16.10.1" => { "family" => "inet" }
-      }
-      node.set["osops_networks"]["management"] = "172.16.0.0/16"
-
-      library.stub("node").and_return(node)
-    end
-
-    it "returns nil and warns if the server/service is not found" do
-      Chef::Log.should_receive("warn").with(/cannot find server\/service/i)
-
-      library.get_env_bind_endpoint("myserver", "unknownservice").should be_nil
-    end
-
-    it "returns host and uri for the endpoint from service info with host" do
-      library.get_env_bind_endpoint("myserver", "myservice").should == {
-        "host" => "localhost",
-        "network" => "management",
-        "path" => "/endpoint",
-        "port" => 80,
-        "scheme" => "http",
-        "uri" => "http://localhost:80/endpoint"
-      }
-    end
-
-    it "returns the host and uri for the endpoint from network without host" do
-      node.set["myserver"]["services"]["myservice"].delete("uri")
-
-      library.get_env_bind_endpoint("myserver", "myservice").should == {
-        "host" => "172.16.10.1",
-        "network" => "management",
-        "path" => "/endpoint",
-        "port" => 80,
-        "scheme" => "http",
-        "uri" => "http://172.16.10.1:80/endpoint"
-      }
-    end
-  end
-
   describe "#get_lb_endpoint" do
     let(:query) { double(Chef::Search::Query) }
     let(:results) { [node] }
