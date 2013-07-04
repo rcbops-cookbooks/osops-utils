@@ -140,27 +140,10 @@ module RCB
 
     if not retval.empty?
       # we'll get the network from the osops network
-      retval["host"] =
-        Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
-      retval["uri"] =
-        "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
-      retval["uri"] += retval["path"]
-      retval
-    else
-      Chef::Log.warn("Cannot find server/service #{server}/#{service}")
-      nil
-    end
-  end
-
-  def get_env_bind_endpoint(server, service, nodeish=nil)
-    nodeish = node unless nodeish
-    retval = get_config_endpoint(server, service, nodeish, true)
-
-    if not retval.empty?
-      # we'll get the network from the osops network
-      if not retval["host"]
+      if not retval.include? "host"
         retval["host"] =
-          Chef::Recipe::IPManagement.get_ip_for_net(retval["network"], nodeish)
+          Chef::Recipe::IPManagement.get_ip_for_net(
+            retval["network"], nodeish)
       end
       retval["uri"] =
         "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
