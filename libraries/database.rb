@@ -58,4 +58,30 @@ module RCB
 
     return
   end
+
+  def add_index_stopgap(db_vendor, db_name, username, pw, idn, tbl, col)
+    case db_vendor
+      when "mysql"
+        connect_host = get_access_endpoint("mysql-master", "mysql", "db")["host"]
+        mysql_info = get_settings_by_role('mysql-master', 'mysql')
+        connection_info = { :host => connect_host,
+                            :username => "root",
+                            :password => mysql_info["server_root_password"] }
+        # create database
+        mysql_database "index #{idn} add" do
+          connection connection_info
+          database_name db_name
+          sql "create index #{idn} on #{tbl} (#{col})"
+          action :query
+          not_if <<-EOH
+            mysql -s -N -uroot \
+            -p#{mysql_info["server_root_password"]} \
+            -h #{connect_host} \
+            -e "show index from #{tbl} where key_name = '#{idn}'" \
+            #{db_name} | grep -o #{idn}
+            EOH
+        end
+    end
+  end
 end
+
