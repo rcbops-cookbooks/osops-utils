@@ -69,7 +69,7 @@ module RCB
       ruby_block "index and check #{idn}" do
         block do
           require 'mysql'
-          con = Mysql.new("#{connect_host}", "#{username}", "#{pw}", "#{db_name}")
+          con = Mysql.new(connect_host, username, pw, db_name)
           tbl_exist = con.query("show tables like \"#{tbl}\"")
           Chef::Log.info("number of table rows #{tbl_exist.num_rows()}")
           if tbl_exist.nil? or tbl_exist.num_rows() > 0
@@ -85,7 +85,7 @@ module RCB
           end
           con.close
         end
-      subscribes "#{cmd}", "#{res}", :delayed
+      subscribes cmd, res, :delayed
       end
     end
   end
