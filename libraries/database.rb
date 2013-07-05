@@ -59,29 +59,35 @@ module RCB
     return
   end
 
-  def add_index_stopgap(db_vendor, db_name, username, pw, idn, tbl, col)
+  def add_index_stopgap(db_vendor, db_name, username, pw, idn, tbl, col, res, cmd)
     case db_vendor
-      when "mysql"
-        connect_host = get_access_endpoint("mysql-master", "mysql", "db")["host"]
-        mysql_info = get_settings_by_role('mysql-master', 'mysql')
-        connection_info = { :host => connect_host,
-                            :username => "root",
-                            :password => mysql_info["server_root_password"] }
-        # create database
-        mysql_database "index #{idn} add" do
-          connection connection_info
-          database_name db_name
-          sql "create index #{idn} on #{tbl} (#{col})"
-          action :query
-          not_if <<-EOH
-            mysql -s -N -uroot \
-            -p#{mysql_info["server_root_password"]} \
-            -h #{connect_host} \
-            -e "show index from #{tbl} where key_name = '#{idn}'" \
-            #{db_name} | grep -o #{idn}
-            EOH
+    when "mysql"
+      log "Index Check/Creation for #{idn} on table #{tbl} for column #{col}"
+      connect_host = get_access_endpoint("mysql-master",
+                                         "mysql",
+                                         "db")["host"]
+      ruby_block "index and check #{idn}" do
+        block do
+          require 'mysql'
+          con = Mysql.new(connect_host, username, pw, db_name)
+          tbl_exist = con.query("show tables like \"#{tbl}\"")
+          Chef::Log.info("number of table rows #{tbl_exist.num_rows()}")
+          if tbl_exist.nil? or tbl_exist.num_rows() > 0
+            col_exist = con.query("show columns from `#{tbl}` like \"#{col}\"")
+            Chef::Log.info("number of column rows #{col_exist.num_rows()}")
+            if col_exist.nil? or col_exist.num_rows() > 0
+              idn_exist = con.query("show index from `#{tbl}` where key_name = \"#{idn}\"")
+              Chef::Log.info("number of index rows #{idn_exist.num_rows()}")
+              if idn_exist.nil? or idn_exist.num_rows() == 0
+                con.query("create index #{idn} on #{tbl} (#{col})")
+              end
+            end
+          end
+          con.close
         end
+      subscribes cmd, res, :delayed
+      end
     end
   end
-end
 
+end
