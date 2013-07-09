@@ -51,7 +51,7 @@ module RCB
   def rcb_safe_deref(hash, path)
     current = hash
 
-    Chef::Log.debug("Searching for #{path} in #{hash}")
+    debug("searching for #{path} in #{hash}")
     path_ary = path.split(".")
     path_ary.each do |k|
       if current and current.has_key?(k)
@@ -116,6 +116,7 @@ module RCB
       # if we have an endpoint, we'll just parse the pieces
       # Chef-10.12.0 is so broke that node.has_key? does not work
       if svc.keys.include?("uri")
+        debug("endpoint URI was provided--overriding default components")
         uri = URI(svc["uri"])
         ["path", "scheme", "port", "host"].each do |x|
           retval.merge!(x => uri.send(x))
@@ -126,6 +127,7 @@ module RCB
         retval["uri"] =
           "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
+        debug("endpoint host was provided--created URI as #{retval['uri']}")
       end
     else
       Chef::Log.info("No configured endpoint for #{server}/#{service}")
@@ -141,6 +143,7 @@ module RCB
     if not retval.empty?
       # we'll get the network from the osops network
       if not retval.include? "host"
+        debug("calling IPManagement#get_ip_for_net() for network '#{retval['network']}'")
         retval["host"] =
           Chef::Recipe::IPManagement.get_ip_for_net(
             retval["network"], nodeish)
@@ -149,6 +152,7 @@ module RCB
         retval["uri"] =
           "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
+        debug("constructed URI components as: '#{retval['uri']}'")
       end
       retval
     else
@@ -172,14 +176,15 @@ module RCB
 
   def get_access_endpoint(role, server, service)
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    debug("searching :node index for '#{query}'")
     result, _, _ = Chef::Search::Query.new.search(:node, query)
     path = "#{role}/#{server}/#{service}"
 
     if result.length == 1 and result[0].name == node.name
-      Chef::Log.debug("Found 1 result for #{path}, and it's me!")
+      debug("found 1 result for #{path}, and it's me!")
       result = [node]
     elsif result.length == 0 and node["roles"].include?(role)
-      Chef::Log.debug("Found 0 result for #{path}, but I'm a role-holder!")
+      debug("found 0 result for #{path}, but I'm a role-holder (using myself)")
       result = [node]
     end
 
@@ -187,8 +192,11 @@ module RCB
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
       nil
     elsif result.length > 1
+      debug("found multiple nodes for #{path} (#{result.map(&:name)})")
+      debug("calling get_lb_endpoint()")
       get_lb_endpoint(role, server, service)
     else
+      debug("calling get_bind_endpoint() for single node (#{result[0].name})")
       get_bind_endpoint(server, service, result[0])
     end
   end
@@ -199,15 +207,21 @@ module RCB
   #
   def get_realserver_endpoints(role, server, service)
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    debug("searching :node index for '#{query}'")
     result = Chef::Search::Query.new.search(:node, query)[0]
 
     # if result doesn't contain current node, but role is in current runlist,
     # add it to result
-    if not result.map(&:name).include?(node.name) and
-      node["roles"].include?(role) then
-
-      result << node
+    if not result.map(&:name).include?(node.name)
+      if node["roles"].include?(role)
+        debug("i wasn't found in search, but '#{role}' role is in " +
+              "my run_list! Adding myself to the results.")
+        result << node
+      end
     end
+
+    debug("calling get_bind_endpoint() for #{result.length} node(s): " +
+      result.map(&:name).to_s)
 
     result.map { |nodeish| get_bind_endpoint(server, service, nodeish) }
   end
@@ -226,25 +240,26 @@ module RCB
   def get_settings_by_role(role, settings, includeme = true)
     if includeme
       if node["roles"].include?(role)
-        Chef::Log.debug(
-          'includeme is true so returning myself if I hold the role')
-
+        debug("`includeme' is true so choosing myself since I hold the role")
         return node[settings]
       end
     end
 
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    debug("searching :node index for '#{query}'")
     result, _, _ = Chef::Search::Query.new.search(:node, query)
 
     if not includeme
       # remove the calling node from the result array
-      Chef::Log.debug('includeme is false so removing myself from results')
+      debug("`includeme' is false so ensuring I'm removed from results")
       result.delete_if { |v| v.name == node.name }
     end
 
     if result.length == 0
+      debug("no usable nodes found!")
       nil
     else
+      debug("returning first result found: #{result[0].name}")
       result[0][settings]
     end
   end
@@ -256,22 +271,26 @@ module RCB
   def get_role_count(role, includeme = true)
 
     query = "roles:#{role} AND chef_environment:#{node.chef_environment}"
+    debug("searching :node index for '#{query}'")
     result = Chef::Search::Query.new.search(:node, query)[0]
 
     if not includeme
       # remove the calling node from the result array
-      Chef::Log.debug('includeme is false so removing myself from results')
+      debug("`includeme' is false so ensuring I'm removed from results")
       result.delete_if { |v| v.name == node.name }
     else
       # if result doesn't contain current node, but role is in current runlist,
       # add it to result
-      if not result.map(&:name).include?(node.name) and
-        node["roles"].include?(role) then
-
-        result << node
+      if not result.map(&:name).include?(node.name)
+        if node["roles"].include?(role)
+          debug("i wasn't found in search, but '#{role}' role is in " +
+                "my run_list! Adding myself to the results.")
+          result << node
+        end
       end
     end
 
+    debug("returning count '#{result.length}' (#{result.map(&:name)})")
     result.length
   end
 
@@ -286,25 +305,27 @@ module RCB
   #
   def get_settings_by_recipe(recipe, settings)
     if node["recipes"].include?(recipe)
+      debug("i contain recipe #{recipe}, so choosing my settings")
       node[settings]
     else
       # force colon escaping if not passed from recipe
       recipe.gsub!(/::/, "\\:\\:")
       query = "recipes:#{recipe} AND chef_environment:#{node.chef_environment}"
+      debug("searching :node index for '#{query}'")
       result, _, _ = Chef::Search::Query.new.search(:node, query)
 
       if result.length == 0
         Chef::Log.warn("Can't find node with recipe #{recipe}")
         nil
       else
+        debug("returning first result found: #{result[0].name}")
         result[0][settings]
       end
     end
   end
 
   def get_lb_endpoint(role, server, service)
-    Chef::Log.debug(
-      "*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
+    debug("*** GET_LB_ENDPOINT: SERVER[#{server}], SERVICE[#{service}]")
 
     path = "#{server}.services.#{service}"
     vip_path = "vips.#{server}-#{service}"
@@ -320,6 +341,7 @@ module RCB
       servers = get_realserver_endpoints(role, server, service)
       retval = servers[0]
       if not retval.empty?
+        debug("using vip #{vip} for endpoint")
         retval["host"] = vip
         retval["uri"] =
           "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
@@ -333,6 +355,12 @@ module RCB
       rcb_exit_error "Found more than 1 #{server}/#{service}" +
         " but #{vip_path} is not defined."
     end
+  end
+
+  def debug(msg)
+    # grab the caller's name (between quotes `') off the top of stack
+    method = caller[0][/`([^']*)'/, 1]
+    Chef::Log.debug("#{method}(): #{msg}")
   end
 
 end
@@ -354,6 +382,9 @@ class Chef::Recipe::IPManagement
 
   # find the local ip for a host on a specific network
   def self.get_ip_for_net(network, node)
+    ourname = "#{__method__}():"   # used in debug statements below
+
+    # handle the simple cases
     return "0.0.0.0" if network == "all"
     return "127.0.0.1" if network == "localhost"
 
@@ -365,29 +396,38 @@ class Chef::Recipe::IPManagement
       network = node["osops_networks"]["mapping"][network]
     end
 
-    if !(node.has_key?("osops_networks") and
+    if ! (node.has_key?("osops_networks") and
       node["osops_networks"].has_key?(network)) then
 
-      rcb_exit_error "Can't find network #{network}"
+      rcb_exit_error "Network '#{network}' is not defined (check environment)"
     end
 
+    # network number associated with this network
     net = IPAddr.new(node["osops_networks"][network])
+    Chef::Log.debug("#{ourname} finding local address for network #{net}")
+
+    # loop thru node's interfaces and look at addresses
     node["network"]["interfaces"].each do |interface|
+      Chef::Log.debug("#{ourname} examining interface #{interface[0]}")
       if interface[1].has_key?("addresses") then
+        # loop thru each address on this interface
         interface[1]["addresses"].each do |k, v|
           if v["family"] == "inet6" or
             (v["family"] == "inet" and v["prefixlen"] != "32") then
 
             addr=IPAddr.new(k)
-            if net.include?(addr) then
-              return k
+            if net.include?(addr)
+              Chef::Log.debug(ourname + "   ===> using #{addr}")
+              return k  # found it
+            else
+              Chef::Log.debug(ourname + "  - ignoring #{addr}")
             end
           end
         end
       end
     end
 
-    rcb_exit_error "Can't find address on network #{network} for node"
+    rcb_exit_error "Can't find address on network '#{network}' for node"
   end
 
   # find the realserver ips for a particular role
