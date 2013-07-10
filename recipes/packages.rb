@@ -108,15 +108,3 @@ when "ubuntu", "debian"
   end
 
 end
-
-# install common packages
-platform_options = node["osops"]["platform"]
-pkgs = platform_options["common_packages"]
-
-pkgs.each do |pkg|
-  package pkg do
-    action node["osops"]["do_package_upgrades"] == true ? :upgrade : :install
-    options platform_options["package_overrides"]
-  end
-end
-
