@@ -363,6 +363,30 @@ module RCB
     Chef::Log.debug("#{method}(): #{msg}")
   end
 
+  def get_nodes_by_recipe(recipe, includeme = true)
+    query = "recipes:#{recipe.gsub(/::/, '\\:\\:')} AND chef_environment:#{node.chef_environment}"
+    debug("searching :node index for '#{query}'")
+    result = Chef::Search::Query.new.search(:node, query)[0]
+
+    if not includeme
+      # remove the calling node from the result array
+      debug("`includeme' is false so ensuring I'm removed from results")
+      result.delete_if { |v| v.name == node.name }
+    else
+      # if result doesn't contain current node, but role is in current runlist,
+      # add it to result
+      if not result.map(&:name).include?(node.name)
+        if node["recipes"].include?(recipe)
+          debug("i wasn't found in search, but '#{recipe}' role is in " +
+                "my run_list! Adding myself to the results.")
+          result << node
+        end
+      end
+    end
+
+    result
+  end
+
 end
 
 class Chef::Recipe
