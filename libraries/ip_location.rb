@@ -180,23 +180,23 @@ module RCB
     result, _, _ = Chef::Search::Query.new.search(:node, query)
     path = "#{role}/#{server}/#{service}"
 
-    if result.length == 1 and result[0].name == node.name
-      debug("found 1 result for #{path}, and it's me!")
-      result = [node]
-    elsif result.length == 0 and node["roles"].include?(role)
-      debug("found 0 result for #{path}, but I'm a role-holder (using myself)")
-      result = [node]
+    # if current node is a role-holder, but it's not in the results, add it.
+    if node["roles"].include?(role)
+      if not result.any?{ |r| r.name == node.name}
+        debug("i hold role '#{role}', but i wasn't found in search!")
+        debug("(adding myself to the results)")
+        result << node
+      end
     end
 
     if result.length == 0
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
       nil
     elsif result.length > 1
-      debug("found multiple nodes for #{path} (#{result.map(&:name)})")
-      debug("calling get_lb_endpoint()")
+      debug("calling get_lb_endpoint() for #{path} (#{result.map(&:name)})")
       get_lb_endpoint(role, server, service)
     else
-      debug("calling get_bind_endpoint() for single node (#{result[0].name})")
+      debug("calling get_bind_endpoint() for #{path} (#{result[0].name})")
       get_bind_endpoint(server, service, result[0])
     end
   end
@@ -341,11 +341,11 @@ module RCB
       servers = get_realserver_endpoints(role, server, service)
       retval = servers[0]
       if not retval.empty?
-        debug("using vip #{vip} for endpoint")
         retval["host"] = vip
         retval["uri"] =
           "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
+        debug("using vip #{vip} for endpoint (#{retval['uri']})")
         retval
       else
         Chef::Log.warn("Cannot find server/service #{server}/#{service}")
