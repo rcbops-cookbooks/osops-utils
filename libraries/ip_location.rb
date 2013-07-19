@@ -117,8 +117,13 @@ module RCB
       # Chef-10.12.0 is so broke that node.has_key? does not work
       if svc.keys.include?("uri")
         debug("endpoint URI was provided--overriding default components")
-        uri = URI(svc["uri"])
-        ["path", "scheme", "port", "host"].each do |x|
+        # if the uri path contains a '%', temporarily sub it out
+        # so the uri can be parsed
+        uri = URI(svc["uri"].gsub('%', 'xxxxxxxxxx'))
+        # sub the '%' back in to pass the path portion into retval
+        retval.merge!('path' => uri.path.gsub('xxxxxxxxxx', '%'))
+        # pass the other parts into retval
+        ["scheme", "port", "host"].each do |x|
           retval.merge!(x => uri.send(x))
         end
       # Chef-10.12.0 is so broke that node.has_key? does not work
