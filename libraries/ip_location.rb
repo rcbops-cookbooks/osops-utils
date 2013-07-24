@@ -56,6 +56,8 @@ module RCB
     path_ary.each do |k|
       if current and current.has_key?(k)
         current = current[k]
+      elsif current and current.respond_to? k
+        current = current.send(k)
       else
         current = nil
       end
