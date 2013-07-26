@@ -32,8 +32,8 @@ ec2_public_endpoint = get_access_endpoint("nova-api-ec2", "nova", "ec2-public")
 # TODO: need to re-evaluate this for accuracy
 template "/root/openrc" do
   source "openrc.erb"
-  owner "nova"
-  group "nova"
+  owner "root"
+  group "root"
   mode "0600"
   vars = {
     "user" => keystone["admin_user"],
