@@ -18,8 +18,8 @@
 #
 #
 
-case node["platform"]
-when "fedora", "redhat", "centos", "scientific", "amazon"
+case node["platform_family"]
+when "rhel"
   # If this is a RHEL based system install the RCB prod and testing repos
 
   major = node['platform_version'].to_i
@@ -69,7 +69,7 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     action :add
   end
 
-when "ubuntu", "debian"
+when "debian"
   include_recipe "apt"
 
   apt_repository "osops" do
