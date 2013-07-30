@@ -18,22 +18,26 @@
 #
 #
 
-case node["platform"]
-when "fedora", "redhat", "centos", "scientific", "amazon"
+case node["platform_family"]
+when "rhel"
   # If this is a RHEL based system install the RCB prod and testing repos
 
   major = node['platform_version'].to_i
   arch = node['kernel']['machine']
   server = "http://build.monkeypuppetlabs.com"
 
-  # TODO(breu): remove this repo when we go to GA on the EPEL Grizzly
-  # Packages
+  # NOTE(mancdaz): default is to use packages for grizzly from epel
+  # If a value is provided for an alternative repo, that repo will get added
+  # here. As long as the packages in that repo supercede those in epel, then
+  # the openstack packages will get installed from there instead
+
   yum_repository "epel-openstack-grizzly" do
     repo_name "epel-openstack-grizzly"
     description "OpenStack Grizzly Repository for EPEL 6"
-    url "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
+    url node["osops"]["yum_repository"]["openstack"]
     enabled 1
     action :add
+    not_if { node["osops"]["yum_repository"]["openstack"].nil? }
   end
 
   if not platform?("fedora")
@@ -65,7 +69,7 @@ when "fedora", "redhat", "centos", "scientific", "amazon"
     action :add
   end
 
-when "ubuntu", "debian"
+when "debian"
   include_recipe "apt"
 
   apt_repository "osops" do

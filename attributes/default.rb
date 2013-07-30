@@ -24,6 +24,9 @@ default["osops"]["apt_repository"]["osops-packages"] =
 default["osops"]["apt_repository"]["openstack"] =
   "http://ubuntu-cloud.archive.canonical.com/ubuntu"
 
+#  example:   "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
+default["osops"]["yum_repository"]["openstack"] =
+  "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
 
 # platform defaults
 case platform_family
