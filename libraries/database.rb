@@ -20,11 +20,10 @@
 require File.dirname(__FILE__) + "/ip_location"
 
 module RCB
-  def create_db_and_user(db_vendor, db_name, username, pw, options={})
+  def create_db_and_user(db_vendor, db_name, username, pw, options = {})
     options = { :role => "mysql-master" }.merge(options)
 
-    case db_vendor
-    when "mysql"
+    if db_vendor == "mysql"
       connect_host = get_access_endpoint(options[:role], "mysql", "db")["host"]
       mysql_info = get_settings_by_role(options[:role], 'mysql')
       connection_info = { :host => connect_host,
@@ -61,15 +60,12 @@ module RCB
     return
   end
 
-  def add_index_stopgap(db_vendor, db_name, username, pw, idn, tbl, col, res, cmd, options={})
+  def add_index_stopgap(db_vendor, db_name, username, pw, idn, tbl, col, res, cmd, options = {})
     options = { :role => "mysql-master" }.merge(options)
 
-    case db_vendor
-    when "mysql"
+    if db_vendor == "mysql"
       log "Index Check/Creation for #{idn} on table #{tbl} for column #{col}"
-      connect_host = get_access_endpoint(options[:role],
-                                         "mysql",
-                                         "db")["host"]
+      connect_host = get_access_endpoint(options[:role], "mysql", "db")["host"]
       ruby_block "index and check #{idn}" do
         block do
           require 'mysql'
@@ -89,7 +85,7 @@ module RCB
           end
           con.close
         end
-      subscribes cmd, res, :delayed
+        subscribes cmd, res, :delayed
       end
     end
   end
