@@ -4,7 +4,9 @@
 
 Tailor.config do |config|
   config.formatters "text"
-  config.file_set "**/*.rb"
+  config.file_set "**/*.rb" do |style|
+    style.max_line_length 120
+  end
 
   config.file_set "Gemfile", :config do |style|
     style.spaces_after_comma 1, level: :off
