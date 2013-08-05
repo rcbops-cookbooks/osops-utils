@@ -201,6 +201,12 @@ describe RCB do
     it "returns nil for an unknown path" do
       library.rcb_safe_deref(hash, "a.d").should be_nil
     end
+
+    it "calls the method of the same name if available" do
+      hash.stub("foop").and_return("panzers!")
+
+      library.rcb_safe_deref(hash, "foop").should eq "panzers!"
+    end
   end
 
   describe "#get_config_endpoint" do
@@ -294,6 +300,21 @@ describe RCB do
         "port" => 80,
         "scheme" => "http",
         "uri" => "http://localhost:80/endpoint"
+      }
+    end
+
+    it "returns host from get_ip_for_net if service host is missing" do
+      service_info.delete("host")
+      service_info.delete("uri")
+      node.set["myserver"]["services"]["myservice"] = service_info
+
+      library.get_bind_endpoint("myserver", "myservice").should == {
+        "host" => "172.16.10.1",
+        "network" => "management",
+        "path" => "/endpoints/foo",
+        "port" => "443",
+        "scheme" => "https",
+        "uri" => "https://172.16.10.1:443/endpoints/foo"
       }
     end
   end
@@ -445,18 +466,23 @@ describe RCB do
           }
       end
 
-      it "find the lb vips for more thanone result" do
+      it "find the lb vips for more than one result" do
         node.set["vips"]["myserver-myservice"] = "172.16.10.10"
-        results << node << node
+        node.stub("name").and_return("first")
+
+        other_node = Chef::Node.new
+        other_node.stub("name").and_return("other_node")
+
+        results << node << other_node
 
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
-            "host" => "localhost",
+            "host" => "172.16.10.10",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
             "scheme" => "http",
-            "uri" => "http://localhost:80/endpoint"
+            "uri" => "http://172.16.10.10:80/endpoint"
           }
       end
     end
@@ -632,6 +658,32 @@ describe RCB do
       results << node
 
       library.get_settings_by_recipe("myrecipe", "mysetting").should eq "foop"
+    end
+  end
+
+  describe "#get_nodes_by_recipe" do
+    let(:query) { double(Chef::Search::Query) }
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+      query.stub("search").and_return([results, nil, nil])
+
+      node.set["recipes"] = []
+
+      library.stub("node").and_return(node)
+    end
+
+    it "returns [] for no search results" do
+      results = library.get_nodes_by_recipe("unknown")
+      results.should be_an_instance_of(Array)
+      results.should be_empty
+    end
+
+    it "returns the nodes if it includes the recipe" do
+      node.set["recipes"] = ["myrecipe"]
+
+      library.get_nodes_by_recipe("myrecipe").should eq [node]
     end
   end
 end
@@ -925,13 +977,13 @@ describe Chef::Recipe::IPManagement do
     end
 
     it "raises exception on multiple results with no vips role in osops" do
-      node.set["osops_networks"]["vips"]["myrole"] = "172.16.10.10"
-      results << node << node
+      # return multiple results
+      library.stub("osops_search").and_return([node, node])
 
-      Chef::Log.should_receive("error").with(/network 'network' is not defined/i)
+      Chef::Log.should_receive("error").with(/can't find lb vip for role 'unknown'/i)
 
       expect { library.get_access_ip_for_role("unknown", "network", node) }.
-        to raise_error(/network 'network' is not defined/i)
+        to raise_error(/can't find lb vip for role 'unknown'/i)
     end
   end
 end

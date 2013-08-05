@@ -508,7 +508,7 @@ class Chef::Recipe::IPManagement
         if not node["osops_networks"] or not node["osops_networks"]["vips"] or
           not node["osops_networks"]["vips"][role] then
 
-          error = "Can't find lb vip for #{role}" +
+          error = "Can't find lb vip for role '#{role}'" +
             " (osops_networks/vips/#{role})" +
             " in environment, with #{candidates.length} #{role} nodes"
 
