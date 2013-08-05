@@ -183,11 +183,12 @@ module RCB
 
   def get_access_endpoint(role, server, service)
     path = "#{role}/#{server}/#{service}"
-    result = osops_search(search_string=role,
-                          one_or_all=:all,
-                          include_me=true,
-                          order=[:role, :recipe],
-                          safe_deref=nil)
+    result = osops_search(
+      search_string=role,
+      one_or_all=:all,
+      include_me=true,
+      order=[:role, :recipe],
+      safe_deref=nil)
 
     Chef::Log.warn("osops_search result: #{result}")
 
@@ -209,12 +210,12 @@ module RCB
   # returns all the candidates, not merely the LB vip
   #
   def get_realserver_endpoints(role, server, service)
-    result = osops_search(search_string=role,
-                          one_or_all=:all,
-                          include_me=true,
-                          order=[:role, :recipe],
-                          safe_deref=nil)
-
+    result = osops_search(
+      search_string=role,
+      one_or_all=:all,
+      include_me=true,
+      order=[:role, :recipe],
+      safe_deref=nil)
 
     debug("calling get_bind_endpoint() for #{result.length} node(s): " +
       result.map(&:name).to_s)
@@ -234,11 +235,12 @@ module RCB
   # If includeme=false, the current node hash is removed from the results
   # before the results are evaluated and returned
   def get_settings_by_role(role, settings, includeme = true)
-    osops_search(search_string=role,
-                          one_or_all=:one,
-                          include_me=includeme,
-                          order=[:role],
-                          safe_deref=settings)
+    osops_search(
+      search_string=role,
+      one_or_all=:one,
+      include_me=includeme,
+      order=[:role],
+      safe_deref=settings)
   end
 
   # Get a specific node hash from another node by recipe
@@ -251,11 +253,12 @@ module RCB
   # values will be returned
   #
   def get_settings_by_recipe(recipe, settings)
-    osops_search(search_string=recipe,
-                 one_or_all=:one,
-                 include_me=true,
-                 order=[:recipe],
-                 safe_deref=settings)
+    osops_search(
+      search_string=recipe,
+      one_or_all=:one,
+      include_me=true,
+      order=[:recipe],
+      safe_deref=settings)
   end
 
   # search for a role and return how many there are in the environment.
@@ -263,52 +266,58 @@ module RCB
   # If includeme=false, the current node is removed from the  search result
   # before the results are evaluated and returned
   def get_role_count(role, includeme=true)
-    osops_search(search_string=role,
-                 one_or_all=:all,
-                 include_me=includeme,
-                 order=[:role],
-                 safe_deref=nil).length
+    osops_search(
+      search_string=role,
+      one_or_all=:all,
+      include_me=includeme,
+      order=[:role],
+      safe_deref=nil).length
   end
 
   def get_nodes_by_recipe(recipe, includeme = true)
-    osops_search(search_string=recipe,
-                 one_or_all=:all,
-                 include_me=includeme,
-                 order=[:recipe],
-                 safe_deref=nil)
+    osops_search(
+      search_string=recipe,
+      one_or_all=:all,
+      include_me=includeme,
+      order=[:recipe],
+      safe_deref=nil)
   end
 
   # Get node hash(es) by recipe or role.
-  def osops_search(search_string,  # recipe or role name
-                   one_or_all=:one,# return first node found or a list of nodes?
-                                   #   if set to :all a list will be returned
-                                   #   even if only one node is found.
-                   include_me=true,# include self in results
-                   order=[:role, :recipe],   # if only one item is to be returned and
-                                   #   there are results from both the role
-                                   #   search and the recipe search, pick the
-                                   #   first item from the list specified here.%
-                                   #   must be :recipe or :role
-                   safe_deref=nil  # if nil, return node(s), else return
-                                   #   rcb_safe_deref(node,safe_deref)
-                  )
+  def osops_search(
+    search_string,  # recipe or role name
+    one_or_all=:one,# return first node found or a list of nodes?
+    #   if set to :all a list will be returned
+    #   even if only one node is found.
+    include_me=true,# include self in results
+    order=[:role, :recipe],   # if only one item is to be returned and
+    #   there are results from both the role
+    #   search and the recipe search, pick the
+    #   first item from the list specified here.%
+    #   must be :recipe or :role
+    safe_deref=nil, # if nil, return node(s), else return
+    #   rcb_safe_deref(node,safe_deref)
+    current_node=nil
+  )
 
     debug("Osops_search: search_string:#{search_string}, one_or_all:#{one_or_all},"\
-          +"include_me:#{include_me}, order:#{order}, safe_deref:#{safe_deref}")
-    results={
+      + "include_me:#{include_me}, order:#{order}, safe_deref:#{safe_deref}")
+    results = {
       :recipe => [],
       :role => []
     }
 
+    current_node ||= node
+
     for query_type in order
-      if include_me and node["#{query_type}s"].include? search_string
+      if include_me and current_node["#{query_type}s"].include? search_string
         Chef::Log::info("I contain #{query_type} #{search_string}, so adding myself to results")
-        results[query_type] << node
+        results[query_type] << current_node
         break if one_or_all == :one # skip expensive searches if unnecessary
       end
 
       search_string.gsub!(/::/, "\\:\\:")
-      query = "#{query_type}s:#{search_string} AND chef_environment:#{node.chef_environment}"
+      query = "#{query_type}s:#{search_string} AND chef_environment:#{current_node.chef_environment}"
       debug("Osops_sesarch Query: #{query}")
       result, _, _ = Chef::Search::Query.new.search(:node, query)
       results[query_type].push(*result)
@@ -316,19 +325,19 @@ module RCB
     end #end for
 
     #combine results into prioritised list
-    return_list = order.map {|search_type| results[search_type]}.reduce(:+)
+    return_list = order.map { |search_type| results[search_type] }.reduce(:+)
 
     #remove duplicates
     return_list.uniq!(&:name)
 
     #remove self if returned by search but include_me is false
-    return_list.delete_if {|e| e.name == node.name }  if not include_me
+    return_list.delete_if { |e| e.name == current_node.name }  if not include_me
 
     if not safe_deref.nil?
       # result should be dereferenced, do that then remove nils.
       debug("applying deref #{safe_deref}")
-      return_list.map! {|nodeish| rcb_safe_deref(nodeish, safe_deref)}
-      return_list.delete_if{|item| item.nil?}
+      return_list.map! { |nodeish| rcb_safe_deref(nodeish, safe_deref) }
+      return_list.delete_if { |item| item.nil? }
     end
 
     debug("ospos_search return_list: #{return_list}")
@@ -360,8 +369,7 @@ module RCB
       retval = servers[0]
       if not retval.empty?
         retval["host"] = vip
-        retval["uri"] =
-          "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
+        retval["uri"] = "#{retval['scheme']}://#{retval['host']}:#{retval['port']}"
         retval["uri"] += retval["path"]
         debug("using vip #{vip} for endpoint (#{retval['uri']})")
         retval
@@ -395,6 +403,7 @@ class Chef::Provider
 end
 
 class Chef::Recipe::IPManagement
+  extend RCB
 
   def self.rcb_exit_error(msg)
     Chef::Log.error(msg)
@@ -417,8 +426,7 @@ class Chef::Recipe::IPManagement
       network = node["osops_networks"]["mapping"][network]
     end
 
-    if ! (node.has_key?("osops_networks") and
-      node["osops_networks"].has_key?(network)) then
+    if ! (node.has_key?("osops_networks") and node["osops_networks"].has_key?(network)) then
 
       rcb_exit_error "Network '#{network}' is not defined (check environment)"
     end
@@ -433,8 +441,7 @@ class Chef::Recipe::IPManagement
       if interface[1].has_key?("addresses") then
         # loop thru each address on this interface
         interface[1]["addresses"].each do |k, v|
-          if v["family"] == "inet6" or
-            (v["family"] == "inet" and v["prefixlen"] != "32") then
+          if v["family"] == "inet6" or (v["family"] == "inet" and v["prefixlen"] != "32") then
 
             addr=IPAddr.new(k)
             if net.include?(addr)
@@ -456,12 +463,24 @@ class Chef::Recipe::IPManagement
     if Chef::Config[:solo] then
       return [self.get_ip_for_net(network, node)]
     else
-      osops_search(search_string=role,
-                   one_or_all=:all,
-                   include_me=includeme,
-                   order=[:role],
-                   safe_deref=nil
-                  ).map { |x| get_ip_for_net(network, x) }
+
+      candidates = osops_search(
+        search_string=role,
+        one_or_all=:all,
+        include_me=true,
+        order=[:role],
+        safe_deref=nil,
+        current_node=node
+      ).map { |x| get_ip_for_net(network, x) }
+
+      if candidates == nil or candidates.length <= 0
+        error = "Can't find any candidates for role #{role}" +
+          " in environment #{node.chef_environment}"
+
+        rcb_exit_error error
+      end
+
+      return candidates
     end
   end
 
@@ -470,12 +489,13 @@ class Chef::Recipe::IPManagement
     if Chef::Config[:solo] then
       return self.get_ip_for_net(network, node)
     else
-
-      candidates = osops_search(search_string=role,
-                                one_or_all=:all,
-                                include_me=true,
-                                order=[:role],
-                                safe_deref=nil)
+      candidates = osops_search(
+        search_string=role,
+        one_or_all=:all,
+        include_me=true,
+        order=[:role],
+        safe_deref=nil,
+        current_node=node)
 
       if candidates.one? then
         return get_ip_for_net(network, candidates.first)
