@@ -21,24 +21,4 @@ require_relative "./support/helpers"
 
 describe_recipe "osops-utils_test::default" do
   include OsopsUtilsTestHelpers
-
-  let(:config) { file(::Dir.glob("/etc/sysctl.d/*rabbitmq.conf").first) }
-
-  it "creates a rabbit sysctl.d config file" do
-    config.must_have(:mode, "0644")
-    config.must_have(:owner, "root")
-    config.must_have(:group, "root")
-  end
-
-  it "contains an updated keepalive time" do
-    config.must_include("net.ipv4.tcp_keepalive_time = 30")
-  end
-
-  it "contains an updated keepalive interval" do
-    config.must_include("net.ipv4.tcp_keepalive_intvl = 1")
-  end
-
-  it "contains an updated keepalive probes" do
-    config.must_include("net.ipv4.tcp_keepalive_probes = 5")
-  end
 end
