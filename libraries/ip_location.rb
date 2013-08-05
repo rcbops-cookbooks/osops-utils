@@ -48,11 +48,11 @@ module RCB
     raise msg
   end
 
-  def rcb_safe_deref(hash, path)
+  def rcb_safe_deref(hash, path, delim = ".")
     current = hash
 
-    debug("searching for #{path} in #{hash}")
-    path_ary = path.split(".")
+    debug("searching for #{path} in #{hash} with delimiter #{delim}")
+    path_ary = path.split(delim)
     path_ary.each do |k|
       if current and current.has_key?(k)
         current = current[k]
@@ -370,6 +370,8 @@ module RCB
         nil
       end
     else
+      # TODO(breu): add more information to this error message to tell the
+      # user which vip they need to define in the environment.
       rcb_exit_error "Found more than 1 #{server}/#{service}" +
         " but #{vip_path} is not defined."
     end
