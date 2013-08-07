@@ -190,7 +190,7 @@ module RCB
       order=[:role, :recipe],
       safe_deref=nil)
 
-    Chef::Log.warn("osops_search result: #{result}")
+    Chef::Log.debug("osops_search result: #{result}")
 
     if result.empty?
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
