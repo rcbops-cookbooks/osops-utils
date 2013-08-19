@@ -357,6 +357,22 @@ describe RCB do
         node.set["osops_networks"]["management"] = "172.16.0.0/16"
       end
 
+      it "escapes - in role names" do
+        node.set["vips"]["myserver-myservice"] = "172.16.10.10"
+
+        query.should_receive("search").with(:node, 'roles:my\-role AND chef_environment:_default').
+          and_return([results, nil, nil])
+
+        library.get_lb_endpoint("my-role", "myserver", "myservice").should == {
+          "host" => "172.16.10.10",
+          "network" => "management",
+          "path" => "/endpoint",
+          "port" => 80,
+          "scheme" => "http",
+          "uri" => "http://172.16.10.10:80/endpoint"
+        }
+      end
+
       it "uses the node if the name matches the search result for vips" do
         node.set["vips"]["myserver-myservice"] = "172.16.10.10"
 
@@ -638,6 +654,13 @@ describe RCB do
       node.set["recipes"] = []
 
       library.stub("node").and_return(node)
+    end
+
+    it "escapes :: in recipe names" do
+      query.should_receive("search").with(:node, 'recipes:my\:\:recipe AND chef_environment:_default').
+        and_return([results, nil, nil])
+
+      library.get_settings_by_recipe("my::recipe", "networks").should be_nil
     end
 
     it "returns nil for no search results" do

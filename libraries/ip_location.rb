@@ -317,6 +317,7 @@ module RCB
       end
 
       search_string.gsub!(/::/, "\\:\\:")
+      search_string.gsub!(/-/, "\\-")
       query = "#{query_type}s:#{search_string} AND chef_environment:#{current_node.chef_environment}"
       debug("Osops_sesarch Query: #{query}")
       result, _, _ = Chef::Search::Query.new.search(:node, query)
