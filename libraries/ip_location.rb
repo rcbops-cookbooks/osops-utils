@@ -316,9 +316,8 @@ module RCB
         break if one_or_all == :one # skip expensive searches if unnecessary
       end
 
-      search_string.gsub!(/::/, "\\:\\:")
-      search_string.gsub!(/-/, "\\-")
-      query = "#{query_type}s:#{search_string} AND chef_environment:#{current_node.chef_environment}"
+      escaped_search_string = search_string.gsub(/::/, "\\:\\:").gsub(/-/, "\\-")
+      query = "#{query_type}s:#{escaped_search_string} AND chef_environment:#{current_node.chef_environment}"
       debug("Osops_sesarch Query: #{query}")
       result, _, _ = Chef::Search::Query.new.search(:node, query)
       results[query_type].push(*result)
