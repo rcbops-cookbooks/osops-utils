@@ -24,7 +24,31 @@ when "rhel"
 
   major = node['platform_version'].to_i
   arch = node['kernel']['machine']
-  server = "http://build.monkeypuppetlabs.com"
+
+  if not platform?("fedora")
+    include_recipe "yum::epel"
+    yum_os="RedHat"
+  else
+    yum_os="Fedora"
+  end
+
+  if node['osops']['rcb']['key'].nil?
+    rcb_key = "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key"
+  else
+    rcb_key = node['osops']['rcb']['key']
+  end
+
+  if node['osops']['rcb']['url'].nil?
+    rcb_repo_url = "http://build.monkeypuppetlabs.com/repo/#{yum_os}/#{major}/#{arch}"
+  else
+    rcb_repo_url = node['osops']['rcb']['url']
+  end
+
+  if node['osops']['rcb']['testing-url'].nil?
+    rcb_testing_repo_url = "http://build.monkeypuppetlabs.com/repo-testing/#{yum_os}/#{major}/#{arch}"
+  else
+    rcb_testing_repo_url = node['osops']['rcb']['testing-url']
+  end
 
   # NOTE(mancdaz): default is to use packages for grizzly from epel
   # If a value is provided for an alternative repo, that repo will get added
@@ -40,33 +64,32 @@ when "rhel"
     not_if { node["osops"]["yum_repository"]["openstack"].nil? }
   end
 
-  if not platform?("fedora")
-    include_recipe "yum::epel"
-    yum_os="RedHat"
-  else
-    yum_os="Fedora"
-  end
-
   yum_key "RPM-GPG-RCB" do
-    url "#{server}/repo/RPM-GPG-RCB.key"
+    url rcb_key
     action :add
   end
 
   yum_repository "rcb" do
     repo_name "rcb"
     description "RCB Ops Stable Repo"
-    url "#{server}/repo/#{yum_os}/#{major}/#{arch}"
+    url rcb_repo_url
     key "RPM-GPG-RCB"
     action :add
   end
 
-  yum_repository "rcb-testing" do
-    repo_name "rcb-testing"
-    description "RCB Ops Testing Repo"
-    url "#{server}/repo-testing/#{yum_os}/#{major}/#{arch}"
-    key "RPM-GPG-RCB"
-    enabled 1
-    action :add
+  if node["developer_mode"] == true
+    yum_repository "rcb-testing" do
+      repo_name "rcb-testing"
+      description "RCB Ops Testing Repo"
+      url rcb_testing_repo_url
+      key "RPM-GPG-RCB"
+      enabled 1
+      action :add
+    end
+  else
+    yum_repository "rcb-testing" do
+      action :remove
+    end
   end
 
 when "debian"

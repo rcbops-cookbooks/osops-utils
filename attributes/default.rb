@@ -24,6 +24,11 @@ default["osops"]["apt_repository"]["osops-packages"] =
 default["osops"]["apt_repository"]["openstack"] =
   "http://ubuntu-cloud.archive.canonical.com/ubuntu"
 
+# Attribute overrides for the rcbops repo at build.monkeypuppetlabs.com
+default['osops']['rcb']['key']=nil
+default['osops']['rcb']['url']=nil
+default['osops']['rcb']['testing-url']=nil
+
 #  example:   "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
 default["osops"]["yum_repository"]["openstack"] =
   "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
