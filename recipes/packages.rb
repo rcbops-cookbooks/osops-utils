@@ -81,9 +81,9 @@ when "debian"
     notifies :run, "execute[apt-get update]", :immediately
   end
 
-  apt_repository "grizzly" do
+  apt_repository "havana" do
     uri node["osops"]["apt_repository"]["openstack"]
-    distribution "precise-updates/grizzly"
+    distribution "precise-updates/havana"
     components ["main"]
     keyserver "hkp://keyserver.ubuntu.com:80"
     key "EC4926EA"
@@ -91,24 +91,18 @@ when "debian"
   end
 
   if node["developer_mode"] == true
-    apt_repository "grizzly-proposed" do
+    apt_repository "havana-proposed" do
       uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
-      distribution "precise-proposed/grizzly"
+      distribution "precise-proposed/havana"
       components ["main"]
       keyserver "hkp://keyserver.ubuntu.com:80"
       key "EC4926EA"
       notifies :run, "execute[apt-get update]", :immediately
     end
   else
-    apt_repository "grizzly-proposed" do
+    apt_repository "havana-proposed" do
       action :remove
       notifies :run, "execute[apt-get update]", :immediately
     end
   end
-
-  apt_repository "folsom" do
-    action :remove
-    notifies :run, "execute[apt-get update]", :immediately
-  end
-
 end
