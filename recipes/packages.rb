@@ -33,7 +33,7 @@ when "rhel"
   end
 
   if node['osops']['rcb']['key'].nil?
-    rcb_key = "http://build.monkeypuppetlabs.com/repo/#{yum_os}/#{major}/#{arch}"
+    rcb_key = "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key"
   else
     rcb_key = node['osops']['rcb']['key']
   end
