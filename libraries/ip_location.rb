@@ -114,6 +114,7 @@ module RCB
       retval["path"] = svc["path"] || "/"
       retval["scheme"] = svc["scheme"] || "http"
       retval["port"] = svc["port"] || "80"
+      retval["name"] = svc["name"]
 
       # if we have an endpoint, we'll just parse the pieces
       # Chef-10.12.0 is so broke that node.has_key? does not work
