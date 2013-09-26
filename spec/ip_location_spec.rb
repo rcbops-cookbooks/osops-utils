@@ -212,6 +212,7 @@ describe RCB do
   describe "#get_config_endpoint" do
     let(:service_info) do
       {
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "scheme" => "https",
@@ -242,6 +243,7 @@ describe RCB do
     it "returns the service info from the specified uri instead" do
       library.get_config_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoint",
         "port" => 80,
@@ -256,6 +258,7 @@ describe RCB do
 
       library.get_config_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "port" => "443",
@@ -268,6 +271,7 @@ describe RCB do
   describe "#get_bind_endpoint" do
     let(:service_info) do
       {
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "scheme" => "https",
@@ -295,6 +299,7 @@ describe RCB do
     it "returns the uri over any constitute parts" do
       library.get_bind_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoint",
         "port" => 80,
@@ -310,6 +315,7 @@ describe RCB do
 
       library.get_bind_endpoint("myserver", "myservice").should == {
         "host" => "172.16.10.1",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "port" => "443",
@@ -341,6 +347,7 @@ describe RCB do
     context "with vips and service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -362,6 +369,7 @@ describe RCB do
 
         library.get_lb_endpoint("myrole", "myserver", "myservice").should == {
           "host" => "172.16.10.10",
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoint",
           "port" => 80,
@@ -375,6 +383,7 @@ describe RCB do
 
         library.get_lb_endpoint("myrole", "myserver", "myservice").should == {
           "host" => "172.16.10.10",
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoint",
           "port" => 80,
@@ -422,6 +431,7 @@ describe RCB do
     context "with service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -444,6 +454,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -458,6 +469,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -478,6 +490,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "172.16.10.10",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -510,6 +523,7 @@ describe RCB do
     context "with service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -532,6 +546,7 @@ describe RCB do
         library.get_realserver_endpoints("myrole", "myserver", "myservice").
           should == [{
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -546,6 +561,7 @@ describe RCB do
         library.get_realserver_endpoints("myrole", "myserver", "myservice").
           should == [{
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
