@@ -35,9 +35,3 @@ end
 apache_module "ssl" do
   conf true
 end
-
-execute "restore-selinux-context" do
-  command "restorecon -Rv /etc/httpd /etc/pki; chcon -R -t httpd_sys_content_t /usr/share/openstack-dashboard || :"
-  action :nothing
-  only_if { platform?("fedora") }
-end
