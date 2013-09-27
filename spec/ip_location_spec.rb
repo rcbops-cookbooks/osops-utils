@@ -6,6 +6,151 @@ describe RCB do
   let(:library) { Object.new.extend(RCB) }
   let(:node) { Chef::Node.new }
 
+  describe "#osops_search" do
+    let(:current_node) do
+      node = Chef::Node.new
+      node.set["roles"] = []
+      node.set["recipes"] = []
+      node.set["tags"] = []
+      node.stub("name").and_return("current_node")
+      node
+    end
+    let(:query) { double(Chef::Search::Query) }
+    let(:result_node) do
+      node = Chef::Node.new
+      node.set["roles"] = []
+      node.set["recipes"] = []
+      node.set["tags"] = []
+      node.stub("name").and_return("result_node")
+      node
+    end
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+
+      library.stub("node").and_return(current_node)
+    end
+
+    context "with defaults" do
+      it "returns one result from roles" do
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term").should eq result_node
+      end
+
+      it "returns one result from recipes if roles returns nothing" do
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([[], nil, nil])
+
+        query.should_receive("search").
+          with(:node, "recipes:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term").should eq result_node
+      end
+
+      it "returns current node w/o searching if node has role" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_not_receive("search")
+
+        library.osops_search("term").should eq current_node
+      end
+
+      it "returns current node w/o searching recipes if node has recipe" do
+        current_node.set["recipes"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([[], nil, nil])
+
+        library.osops_search("term").should eq current_node
+      end
+    end
+
+    context "with include_me param disabled" do
+      it "ignores current node w/o searching if node has role" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term", :one, false).should eq result_node
+      end
+    end
+
+    context "with include_me option disabled" do
+      it "ignores current node w/o searching if node has role" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term", :one, true, [:role, :recipe], nil, nil, :include_me => false).should eq result_node
+      end
+    end
+
+    context "with one_or_all set to :all" do
+      it "returns all results" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        query.should_receive("search").
+          with(:node, "recipes:term AND chef_environment:_default").
+          and_return([[], nil, nil])
+
+        library.osops_search("term", :all).should eq [current_node, result_node]
+      end
+    end
+
+    context "with one_or_all options set to :all" do
+      it "returns all results" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        query.should_receive("search").
+          with(:node, "recipes:term AND chef_environment:_default").
+          and_return([[], nil, nil])
+
+        library.osops_search("term", :one, true, [:role, :recipe], nil, nil, :one_or_all => :all).should eq [current_node, result_node]
+      end
+    end
+
+    context "with order set to tags" do
+      it "searches tags instead" do
+        current_node.set["tags"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "tags:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term", :all, true, [:tag]).should eq [current_node, result_node]
+      end
+    end
+  end
 
   describe "#get_if_ip_for_net" do
     context "with a Chef::Node" do
@@ -212,6 +357,7 @@ describe RCB do
   describe "#get_config_endpoint" do
     let(:service_info) do
       {
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "scheme" => "https",
@@ -242,6 +388,7 @@ describe RCB do
     it "returns the service info from the specified uri instead" do
       library.get_config_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoint",
         "port" => 80,
@@ -256,6 +403,7 @@ describe RCB do
 
       library.get_config_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "port" => "443",
@@ -268,6 +416,7 @@ describe RCB do
   describe "#get_bind_endpoint" do
     let(:service_info) do
       {
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "scheme" => "https",
@@ -295,6 +444,7 @@ describe RCB do
     it "returns the uri over any constitute parts" do
       library.get_bind_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoint",
         "port" => 80,
@@ -310,6 +460,7 @@ describe RCB do
 
       library.get_bind_endpoint("myserver", "myservice").should == {
         "host" => "172.16.10.1",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "port" => "443",
@@ -341,6 +492,7 @@ describe RCB do
     context "with vips and service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -362,6 +514,7 @@ describe RCB do
 
         library.get_lb_endpoint("myrole", "myserver", "myservice").should == {
           "host" => "172.16.10.10",
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoint",
           "port" => 80,
@@ -375,6 +528,7 @@ describe RCB do
 
         library.get_lb_endpoint("myrole", "myserver", "myservice").should == {
           "host" => "172.16.10.10",
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoint",
           "port" => 80,
@@ -422,6 +576,7 @@ describe RCB do
     context "with service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -444,6 +599,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -458,6 +614,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -478,6 +635,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "172.16.10.10",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -510,6 +668,7 @@ describe RCB do
     context "with service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -532,6 +691,7 @@ describe RCB do
         library.get_realserver_endpoints("myrole", "myserver", "myservice").
           should == [{
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -546,6 +706,7 @@ describe RCB do
         library.get_realserver_endpoints("myrole", "myserver", "myservice").
           should == [{
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -616,7 +777,7 @@ describe RCB do
       library.get_role_count("unknown").should eq 0
     end
 
-    it "excludes node from results  if includeme is fals" do
+    it "excludes node from results if includeme is false" do
       results << node
 
       library.get_role_count("myrole", false).should eq 0
