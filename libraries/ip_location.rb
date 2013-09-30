@@ -274,6 +274,26 @@ module RCB
     )
   end
 
+  # Get a specific node hash from another node by tag
+  #
+  # In the event of a search with multiple results,
+  # it returns the first match
+  #
+  # In the event of a search with a no matches, if the tag
+  # is held on the running node, then the current node hash
+  # values will be returned
+  def get_settings_by_tag(tag, settings, options={})
+    osops_search(
+      search_string=tag,
+      one_or_all=:one,
+      include_me=true,
+      order=[:tag],
+      safe_deref=settings,
+      current_node=nil,
+      options
+    )
+  end
+
   # search for a role and return how many there are in the environment.
   #
   # If includeme=false, the current node is removed from the  search result
@@ -290,12 +310,36 @@ module RCB
     ).length
   end
 
+  def get_nodes_by_role(role, includeme=true, options={})
+    osops_search(
+      search_string=role,
+      one_or_all=:all,
+      include_me=includeme,
+      order=[:role],
+      safe_deref=nil,
+      current_node=nil,
+      options
+    )
+  end
+
   def get_nodes_by_recipe(recipe, includeme=true, options={})
     osops_search(
       search_string=recipe,
       one_or_all=:all,
       include_me=includeme,
       order=[:recipe],
+      safe_deref=nil,
+      current_node=nil,
+      options
+    )
+  end
+
+  def get_nodes_by_tag(tag, includeme=true, options={})
+    osops_search(
+      search_string=tag,
+      one_or_all=:all,
+      include_me=includeme,
+      order=[:tag],
       safe_deref=nil,
       current_node=nil,
       options
@@ -499,22 +543,51 @@ class Chef::Recipe::IPManagement
 
   # find the realserver ips for a particular role
   def self.get_ips_for_role(role, network, node, options={})
+    options = {:order => [:role]}.merge(options)
+
+    self.get_ips_for_search(role, network, node, options)
+  end
+
+  # find the realserver ips for a particular recipe
+  def self.get_ips_for_recipe(recipe, network, node, options={})
+    options = {:order => [:recipe]}.merge(options)
+
+    self.get_ips_for_search(recipe, network, node, options)
+  end
+
+  # find the realserver ips for a particular tag
+  def self.get_ips_for_tag(tag, network, node, options={})
+    options = {:order => [:tag]}.merge(options)
+
+    self.get_ips_for_search(tag, network, node, options)
+  end
+
+  # find the realserver ips for a particular role
+  def self.get_ips_for_search(term, network, node, options={})
     if Chef::Config[:solo] then
       return [self.get_ip_for_net(network, node)]
     else
 
+      options = {
+        :one_or_all => :all,
+        :include_me => true,
+        :order => [:recipe, :role, :tag],
+        :safe_deref => nil,
+        :current_node => node
+      }.merge(options)
+
       candidates = osops_search(
-        search_string=role,
-        one_or_all=:all,
-        include_me=true,
-        order=[:role],
-        safe_deref=nil,
-        current_node=node,
+        search_string=term,
+        one_or_all=options[:one_or_all],
+        include_me=options[:include_me],
+        order=options[:order],
+        safe_deref=options[:safe_deref],
+        current_node=options[:current_node],
         options
       ).map { |x| get_ip_for_net(network, x) }
 
       if candidates == nil or candidates.length <= 0
-        error = "Can't find any candidates for role #{role}" +
+        error = "Can't find any candidates for search in #{options[:order].join(", ")} for #{term}" +
           " in environment #{node.chef_environment}"
 
         rcb_exit_error error
