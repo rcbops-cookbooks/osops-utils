@@ -39,7 +39,7 @@ when "rhel"
   default["osops"]["platform"] = {
     "common_packages" => ["python-eventlet", "python-ceilometerclient",
       "python-cinderclient", "python-glanceclient", "python-keystoneclient",
-      "python-novaclient", "python-quantumclient", "MySQL-python",
+      "python-novaclient", "python-neutronclient", "MySQL-python",
       "python-warlock", "curl", "python-keystone"],
     "ssl_common_packages" => ["python-paste-deploy"],
     "package_options" => ""
@@ -48,7 +48,7 @@ when "debian"
   default["osops"]["platform"] = {
     "common_packages" => ["python-eventlet", "python-ceilometerclient",
       "python-cinderclient", "python-glanceclient", "python-keystoneclient",
-      "python-novaclient", "python-quantumclient", "python-mysqldb",
+      "python-novaclient", "python-neutronclient", "python-mysqldb",
       "python-warlock", "curl", "python-keystone"],
     "ssl_common_packages" => [],
     "package_options" => "-o Dpkg::Options::='--force-confold' -o Dpkg::Options::='--force-confdef'"
