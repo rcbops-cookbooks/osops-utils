@@ -394,14 +394,14 @@ module RCB
 
     for query_type in order
       if include_me and current_node["#{query_type}s"].include? search_string
-        Chef::Log::info("I contain #{query_type} #{search_string}, so adding myself to results")
+        debug("node #{current_node} contains #{query_type} #{search_string}, so adding node to results")
         results[query_type] << current_node
         break if one_or_all == :one # skip expensive searches if unnecessary
       end
 
       search_string.gsub!(/::/, "\\:\\:")
       query = "#{query_type}s:#{search_string} AND chef_environment:#{current_node.chef_environment}"
-      debug("Osops_sesarch Query: #{query}")
+      debug("osops_search query: #{query}")
       result, _, _ = Chef::Search::Query.new.search(:node, query)
       results[query_type].push(*result)
       break if one_or_all == :one and results.values.map(&:length).reduce(:+).nonzero?
