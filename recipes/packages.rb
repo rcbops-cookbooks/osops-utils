@@ -122,8 +122,22 @@ when "debian"
       key "EC4926EA"
       notifies :run, "execute[apt-get update]", :immediately
     end
+    # TODO(breu): remove this when the packages go into cloud archive
+    apt_repository "havana-proposed-ppa" do
+      uri "http://ppa.launchpad.net/ubuntu-cloud-archive/havana-staging/ubuntu"
+      distribution "precise"
+      components ["main"]
+      keyserver "hkp://keyserver.ubuntu.com:80"
+      key "9F68104E"
+      notifies :run, "execute[apt-get update]", :immediately
+    end
   else
     apt_repository "havana-proposed" do
+      action :remove
+      notifies :run, "execute[apt-get update]", :immediately
+    end
+    # TODO(breu): remove this when the packages go into cloud archive
+    apt_repository "havana-proposed-ppa" do
       action :remove
       notifies :run, "execute[apt-get update]", :immediately
     end
