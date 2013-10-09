@@ -64,14 +64,15 @@ module RCB
           require 'mysql'
           con = Mysql.new(connect_host, username, pw, db_name)
           tbl_exist = con.query("show tables like \"#{tbl}\"")
-          Chef::Log.info("number of table rows #{tbl_exist.num_rows()}")
+          Chef::Log.debug("number of table rows #{tbl_exist.num_rows()}")
           if tbl_exist.nil? or tbl_exist.num_rows() > 0
             col_exist = con.query("show columns from `#{tbl}` like \"#{col}\"")
-            Chef::Log.info("number of column rows #{col_exist.num_rows()}")
+            Chef::Log.debug("number of column rows #{col_exist.num_rows()}")
             if col_exist.nil? or col_exist.num_rows() > 0
               idn_exist = con.query("show index from `#{tbl}` where key_name = \"#{idn}\"")
-              Chef::Log.info("number of index rows #{idn_exist.num_rows()}")
+              Chef::Log.debug("number of index rows #{idn_exist.num_rows()}")
               if idn_exist.nil? or idn_exist.num_rows() == 0
+                Chef::Log.info("Creating index #{idn} on #{tbl} (#{col})")
                 con.query("create index #{idn} on #{tbl} (#{col})")
               end
             end
