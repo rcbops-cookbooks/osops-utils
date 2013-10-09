@@ -37,21 +37,14 @@ module RCB
         action :create
       end
 
-      # create user
-      mysql_database_user username do
-        connection connection_info
-        password pw
-        action :create
-      end
-
-      # grant privs to user
+      # create/user & grant privs to user
       mysql_database_user username do
         connection connection_info
         password pw
         database_name db_name
         host '%'
         privileges [:all]
-        action :grant
+        action [:create, :grant]
       end
 
       return mysql_info
