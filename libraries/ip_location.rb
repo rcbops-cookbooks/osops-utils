@@ -194,7 +194,7 @@ module RCB
       options
     )
 
-    Chef::Log.info("osops_search result: #{result}")
+    debug("get_access_endpoint #{path} result: #{result}")
 
     if result.empty?
       Chef::Log.warn("Cannot find #{server}/#{service} for role #{role}")
