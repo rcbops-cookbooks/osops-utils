@@ -30,8 +30,15 @@ attribute "osops/do_package_upgrades",
   :description => "Enable/disable automatic package upgrades",
   :default => "false"
 
-attribute "apt_repository/osops-packages",
-  :description => "Url of the osops packages repository"
+attribute "osops/yum_repos",
+  :description => "Hash of Yum repos to configure"
 
-attribute "apt_repository/openstack",
-  :description => "Url of the openstack packages repository"
+attribute "osops/yum_testing_repos",
+  :description => "Hash of Yum STAGING repos to configure"
+
+attribute "osops/apt_repos",
+  :description => "Hash of Apt repos to configure"
+
+attribute "osops/apt_testing_repos",
+  :description => "Hash of Apt STAGING repos to configure"
+
