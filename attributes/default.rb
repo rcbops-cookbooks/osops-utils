@@ -31,7 +31,7 @@ default['osops']['rcb']['testing-url']=nil
 
 #  example:   "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
 default["osops"]["yum_repository"]["openstack"] =
-  "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
+  "http://repos.fedorapeople.org/repos/openstack/openstack-havana/epel-6"
 
 # platform defaults
 case platform_family

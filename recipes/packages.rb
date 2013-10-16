@@ -55,9 +55,9 @@ when "rhel"
   # here. As long as the packages in that repo supercede those in epel, then
   # the openstack packages will get installed from there instead
 
-  yum_repository "epel-openstack-grizzly" do
-    repo_name "epel-openstack-grizzly"
-    description "OpenStack Grizzly Repository for EPEL 6"
+  yum_repository "epel-openstack-havana" do
+    repo_name "epel-openstack-havana"
+    description "OpenStack Havana Repository for EPEL 6"
     url node["osops"]["yum_repository"]["openstack"]
     enabled 1
     action :add
