@@ -20,118 +20,116 @@
 
 case node["platform_family"]
 when "rhel"
-  # If this is a RHEL based system install the RCB prod and testing repos
-
-  major = node['platform_version'].to_i
-  arch = node['kernel']['machine']
-
   if not platform?("fedora")
     include_recipe "yum::epel"
-    yum_os="RedHat"
-  else
-    yum_os="Fedora"
   end
 
-  if node['osops']['rcb']['key'].nil?
-    rcb_key = "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key"
-  else
-    rcb_key = node['osops']['rcb']['key']
+  # remove old repo (named generically now)
+  file "/etc/yum.repos.d/epel-openstack-grizzly.repo" do
+    action :delete
   end
 
-  if node['osops']['rcb']['url'].nil?
-    rcb_repo_url = "http://build.monkeypuppetlabs.com/repo/#{yum_os}/#{major}/#{arch}"
-  else
-    rcb_repo_url = node['osops']['rcb']['url']
-  end
-
-  if node['osops']['rcb']['testing-url'].nil?
-    rcb_testing_repo_url = "http://build.monkeypuppetlabs.com/repo-testing/#{yum_os}/#{major}/#{arch}"
-  else
-    rcb_testing_repo_url = node['osops']['rcb']['testing-url']
-  end
-
-  # NOTE(mancdaz): default is to use packages for grizzly from epel
-  # If a value is provided for an alternative repo, that repo will get added
-  # here. As long as the packages in that repo supercede those in epel, then
-  # the openstack packages will get installed from there instead
-
-  yum_repository "epel-openstack-grizzly" do
-    repo_name "epel-openstack-grizzly"
-    description "OpenStack Grizzly Repository for EPEL 6"
-    url node["osops"]["yum_repository"]["openstack"]
-    enabled 1
-    action :add
-    not_if { node["osops"]["yum_repository"]["openstack"].nil? }
-  end
-
-  yum_key "RPM-GPG-RCB" do
-    url rcb_key
-    action :add
-  end
-
-  yum_repository "rcb" do
-    repo_name "rcb"
-    description "RCB Ops Stable Repo"
-    url rcb_repo_url
-    key "RPM-GPG-RCB"
-    action :add
-  end
-
-  if node["developer_mode"] == true
-    yum_repository "rcb-testing" do
-      repo_name "rcb-testing"
-      description "RCB Ops Testing Repo"
-      url rcb_testing_repo_url
-      key "RPM-GPG-RCB"
-      enabled 1
+  # Create yum repos.
+  #
+  # TODO(brett): Lay down all repos in a single template file,
+  #              then manually install GPG keys and run `yum makecache' once.
+  #
+  # 'yum_repos' attr is a hash of hashes...
+  node["osops"]["yum_repos"].keys.each do |name|
+    h = node["osops"]["yum_repos"][name]
+    yum_repository name do
+      repo_name name
+      description h['description']
+      url h['uri']
+      enabled h['enabled']
       action :add
     end
+
+    # check if we have a gpg key defined and add it to the resource
+    if h.has_key?('key')
+      yum_r = run_context.resource_collection.find(:yum_repository => name)
+      yum_r.key h['key']
+    end
+  end
+
+  # Install GPG keys
+  node["osops"]["yum_keys"].keys.each do |name|
+    yum_key name do
+      url node["osops"]["yum_keys"][name]
+      action :add
+    end
+  end
+
+  # Toggle staging repos
+  #
+  if node["enable_testing_repos"] == true
+    # nested hashes
+    node["osops"]["yum_testing_repos"].keys.each do |name|
+      h = node["osops"]["yum_testing_repos"][name]
+      yum_repository name do
+        repo_name name
+        description h['description']
+        url h['uri']
+        enabled h['enabled']
+        action :add
+      end
+      if h.has_key?('key')
+        yum_r = run_context.resource_collection.find(:yum_repository => name)
+        yum_r.key h['key']
+      end
+    end
   else
-    yum_repository "rcb-testing" do
-      action :remove
+    node["osops"]["yum_testing_repos"].keys.each do |name|
+      h = node["osops"]["yum_testing_repos"][name]
+      yum_repository name do
+        action :remove
+      end
     end
   end
 
 when "debian"
   include_recipe "apt"
 
-  apt_repository "osops" do
-    uri node["osops"]["apt_repository"]["osops-packages"]
-    distribution node["lsb"]["codename"]
-    components ["main"]
-    keyserver "hkp://keyserver.ubuntu.com:80"
-    key "53E8EA35"
-    notifies :run, "execute[apt-get update]", :immediately
-  end
-
-  apt_repository "grizzly" do
-    uri node["osops"]["apt_repository"]["openstack"]
-    distribution "precise-updates/grizzly"
-    components ["main"]
-    keyserver "hkp://keyserver.ubuntu.com:80"
-    key "EC4926EA"
-    notifies :run, "execute[apt-get update]", :immediately
-  end
-
-  if node["developer_mode"] == true
-    apt_repository "grizzly-proposed" do
-      uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
-      distribution "precise-proposed/grizzly"
-      components ["main"]
-      keyserver "hkp://keyserver.ubuntu.com:80"
-      key "EC4926EA"
+  # Create apt repos
+  #
+  # TODO(brett): Lay down all repos in a single template file,
+  #              then manually configure keys and run `apt-get update' ONCE.
+  #
+  # 'apt_repos' attr is a hash of hashes...
+  node["osops"]["apt_repos"].keys.each do |name|
+    h = node["osops"]["apt_repos"][name]
+    apt_repository name do
+      uri h['uri']
+      distribution h['distribution']
+      components h['components']
+      keyserver h['keyserver']
+      key h['key']
       notifies :run, "execute[apt-get update]", :immediately
+    end
+  end
+
+  # Toggle staging repos
+  #
+  if node["enable_testing_repos"] == true
+    # nested hashes
+    node["osops"]["apt_testing_repos"].keys.each do |name|
+      h = node["osops"]["apt_testing_repos"][name]
+      apt_repository name do
+        uri h['uri']
+        distribution h['distribution']
+        components h['components']
+        keyserver h['keyserver']
+        key h['key']
+        notifies :run, "execute[apt-get update]", :immediately
+      end
     end
   else
-    apt_repository "grizzly-proposed" do
-      action :remove
-      notifies :run, "execute[apt-get update]", :immediately
+    node["osops"]["apt_testing_repos"].keys.each do |name|
+      h = node["osops"]["apt_testing_repos"][name]
+      apt_repository name do
+        action :remove
+        notifies :run, "execute[apt-get update]", :immediately
+      end
     end
-  end
-
-  apt_repository "folsom" do
-    action :remove
-    notifies :run, "execute[apt-get update]", :immediately
-  end
-
-end
+  end #if node["enable_testing_repos"] == true
+end #case node["platform_family"]
