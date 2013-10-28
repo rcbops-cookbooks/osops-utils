@@ -36,13 +36,13 @@ describe RCB do
           object.should_receive("action").with(:create)
       end
 
-      library.should_receive("mysql_database_user").with(username).
-        and_yield do |object|
+      #library.should_receive("mysql_database_user").with(username).
+        #and_yield do |object|
 
-          object.should_receive("connection").with(connection_info)
-          object.should_receive("password").with(password)
-          object.should_receive("action").with(:create)
-      end
+          #object.should_receive("connection").with(connection_info)
+          #object.should_receive("password").with(password)
+          #object.should_receive("action").with(:create)
+      #end
 
       library.should_receive("mysql_database_user").with(username).
         and_yield do |object|
@@ -52,7 +52,7 @@ describe RCB do
           object.should_receive("database_name").with(database)
           object.should_receive("host").with("%")
           object.should_receive("privileges").with([:all])
-          object.should_receive("action").with(:grant)
+          object.should_receive("action").with([:create, :grant])
       end
 
       library.create_db_and_user("mysql", database, username, password).

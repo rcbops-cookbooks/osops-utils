@@ -564,9 +564,6 @@ describe RCB do
     end
 
     it "returns nil for no matching role, service, service" do
-      Chef::Log.should_receive("info").
-        with(/osops_search result:/i)
-
       Chef::Log.should_receive("warn").
         with(/cannot find unknown\/unknown for role unknown/i)
 
