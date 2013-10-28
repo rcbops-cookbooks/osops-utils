@@ -300,6 +300,22 @@ describe RCB do
           to raise_error(/can't find network/i)
       end
 
+      it "skips an interface and ip for matching inet4 ip/32" do
+        node.set["network"]["interfaces"]["eth0"]["addresses"]["172.16.10.1"]["prefixlen"] = "32"
+        node.set["osops_networks"]["network"] = "172.16.0.0/16"
+
+        expect { library.get_ip_for_net("network") }.
+          to raise_error(/can't find address on network/i)
+      end
+
+      it "skips an interface and ip for matching inet6 ip/128" do
+        node.set["network"]["interfaces"]["eth0"]["addresses"]["21DA:00D3:0000:2F3B:02AA:00FF:FE28:9C5A"]["prefixlen"] = "128"
+        node.set["osops_networks"]["network"] = "21DA:00D3:0000:2F3B:02AA:00FF::/32"
+
+        expect { library.get_ip_for_net("network") }.
+          to raise_error(/can't find address on network/i)
+      end
+
       it "returns an interface and ip for matching inet4 network" do
         node.set["osops_networks"]["network"] = "172.16.0.0/16"
 

@@ -93,7 +93,10 @@ module RCB
     nodeish["network"]["interfaces"].each do |interface|
       unless interface[1]['addresses'].nil?
         interface[1]["addresses"].each do |k, v|
-          if v["family"] == "inet6" or v["family"] == "inet" then
+          family = v['family']
+          prefixlen = v['prefixlen']
+
+          if (family == "inet6" && prefixlen != "128") or (family == "inet" && prefixlen != "32" ) then
             addr=IPAddr.new(k)
             if net.include?(addr) then
               return [interface[0], k]
