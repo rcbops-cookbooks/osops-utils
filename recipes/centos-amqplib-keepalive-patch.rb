@@ -18,6 +18,16 @@
 #
 
 
+#
+# Install the python-amqplib package early so we can modify it as necessary
+#
+package "python-amqplib" do
+  action node["osops"]["do_package_upgrades"] == true ? :upgrade : :install
+end
+
+#
+# change transport.py in amqplib to use keepalive for sockets
+#
 template "/usr/lib/python2.6/site-packages/amqplib/client_0_8/transport.py" do
   source "patches/transport.py.python-amqplib-0.6.1-2.el6.noarch.erb"
   owner "root"
