@@ -69,12 +69,25 @@ when "rhel"
     action :add
   end
 
+  yum_key "RPM-GPG-OBS" do
+    url "http://download.opensuse.org/repositories/home:/rpcops/RedHat_RHEL-6/repodata/repomd.xml.key"
+    action :add
+  end
+
   yum_repository "rcb" do
     repo_name "rcb"
     description "RCB Ops Stable Repo"
     url rcb_repo_url
     key "RPM-GPG-RCB"
     action :add
+  end
+
+  yum_repository "rpc-extras" do
+    repo_name "rpc-extras"
+    description "RPC OpenStack-Related Packages"
+    url "http://download.opensuse.org/repositories/home:/rpcops/RedHat_RHEL-6/"
+    enabled 1
+    key "RPM-GPG-OBS"
   end
 
   if node["developer_mode"] == true
@@ -112,6 +125,14 @@ when "debian"
     key "EC4926EA"
     notifies :run, "execute[apt-get update]", :immediately
   end
+
+  apt_repository "nova-extras" do
+    uri "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/"
+    distribution "/"
+    key "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/Release.key"
+  end
+
+end
 
   if node["developer_mode"] == true
     apt_repository "grizzly-proposed" do
