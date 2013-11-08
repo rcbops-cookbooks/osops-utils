@@ -20,6 +20,12 @@ when "rhel"
       "description" => "OpenStack Havana Repository for EPEL 6",
       "uri" => "http://repos.fedorapeople.org/repos/openstack/openstack-havana/epel-6",
       "enabled" => 1
+    },
+    "rpc-extras" => {
+      "description" => "RPC OpenStack-Related Packages",
+      "uri" => "http://download.opensuse.org/repositories/home:/rpcops/RedHat_RHEL-6/",
+      "enabled" => 1,
+      "key" => "RPM-GPG-OBS"
     }
   }
 
@@ -35,8 +41,10 @@ when "rhel"
 
   # GPG keys
   default["osops"]["yum_keys"] = {
-    "RPM-GPG-RCB" => "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key"
+    "RPM-GPG-RCB" => "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key",
+    "RPM-GPG-OBS" => "http://download.opensuse.org/repositories/home:/rpcops/RedHat_RHEL-6/repodata/repomd.xml.key"
   }
+
 
 when "debian"
   ########################################
@@ -56,6 +64,12 @@ when "debian"
       "components" => ["main"],
       "keyserver" => "hkp://keyserver.ubuntu.com:80",
       "key" => "EC4926EA"
+    },
+    "rpc-extras" => {
+      "uri" => "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/",
+      "distribution" => "/",
+      "components" => [],
+      "key" => "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/Release.key"
     }
   }
 
