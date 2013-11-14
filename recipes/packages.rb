@@ -132,8 +132,6 @@ when "debian"
     key "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/Release.key"
   end
 
-end
-
   if node["developer_mode"] == true
     apt_repository "grizzly-proposed" do
       uri "http://ubuntu-cloud.archive.canonical.com/ubuntu"
