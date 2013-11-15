@@ -19,7 +19,8 @@ when "rhel"
     "epel-openstack" => {
       "description" => "OpenStack Havana Repository for EPEL 6",
       "uri" => "http://repos.fedorapeople.org/repos/openstack/openstack-havana/epel-6",
-      "enabled" => 1
+      "enabled" => 1,
+      "key" => "RPM-GPG-KEY-RDO-Havana"
     },
     "rpc-extras" => {
       "description" => "RPC OpenStack-Related Packages",
@@ -42,7 +43,9 @@ when "rhel"
   # GPG keys
   default["osops"]["yum_keys"] = {
     "RPM-GPG-RCB" => "http://build.monkeypuppetlabs.com/repo/RPM-GPG-RCB.key",
-    "RPM-GPG-OBS" => "http://download.opensuse.org/repositories/home:/rpcops/RedHat_RHEL-6/repodata/repomd.xml.key"
+    "RPM-GPG-OBS" => "http://download.opensuse.org/repositories/home:/rpcops/RedHat_RHEL-6/repodata/repomd.xml.key",
+    # this seems to be the official location of the RDO Havana key
+    "RPM-GPG-KEY-RDO-Havana" => "https://raw.github.com/redhat-openstack/rdo-release/master/RPM-GPG-KEY-RDO-Havana"
   }
 
 
