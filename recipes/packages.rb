@@ -70,7 +70,7 @@ when "rhel"
   end
 
   yum_key "RPM-GPG-OBS" do
-    url "http://download.opensuse.org/repositories/home:/rpcops/RedHat_RHEL-6/repodata/repomd.xml.key"
+    url "http://download.opensuse.org/repositories/home:/rpcops:/grizzly/RedHat_RHEL-6/repodata/repomd.xml.key"
     action :add
   end
 
@@ -85,7 +85,7 @@ when "rhel"
   yum_repository "rpc-extras" do
     repo_name "rpc-extras"
     description "RPC OpenStack-Related Packages"
-    url "http://download.opensuse.org/repositories/home:/rpcops/RedHat_RHEL-6/"
+    url "http://download.opensuse.org/repositories/home:/rpcops:/grizzly/RedHat_RHEL-6/"
     enabled 1
     key "RPM-GPG-OBS"
   end
@@ -127,9 +127,9 @@ when "debian"
   end
 
   apt_repository "nova-extras" do
-    uri "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/"
+    uri "http://download.opensuse.org/repositories/home:/rpcops:/grizzly/xUbuntu_12.04/"
     distribution "/"
-    key "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/Release.key"
+    key "http://download.opensuse.org/repositories/home:/rpcops:/grizzly/xUbuntu_12.04/Release.key"
   end
 
   if node["developer_mode"] == true
