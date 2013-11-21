@@ -44,7 +44,7 @@ when "rhel"
     },
     "rpc-extras" => {
       "description" => "RPC OpenStack-Related Packages",
-      "uri" => "http://download.opensuse.org/repositories/home:/rpcops:/#{prod_distro}/",
+      "uri" => "http://download.opensuse.org/repositories/home:/rpcops:/havana/#{prod_distro}/",
       "enabled" => 1,
       "key" => "RPM-GPG-OBS"
     }
