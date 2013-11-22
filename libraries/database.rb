@@ -24,8 +24,9 @@ module RCB
     options = { :role => "mysql-master" }.merge(options)
 
     if db_vendor == "mysql"
-      connect_host = get_access_endpoint(options[:role], "mysql", "db")["host"]
-      mysql_info = get_settings_by_role(options[:role], 'mysql')
+      connect_host = get_mysql_endpoint["host"]
+      mysql_info = get_mysql_settings
+
       connection_info = { :host => connect_host,
         :username => "root",
         :password => mysql_info["server_root_password"] }
