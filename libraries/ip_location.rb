@@ -172,6 +172,30 @@ module RCB
     end
   end
 
+  # Get the access endpoint the mysql master role.
+  #
+  # This is the same as calling:
+  #
+  #   get_access_endpoint("mysql-master", "mysql", "db")
+  #
+  # with the additional override that allowes one to specify a non chef
+  # managed mysql server in the following attributes:
+  #
+  # node["unmanaged"]["mysql"]["host"] = "10.10.10.10"
+  # node["unmanaged"]["mysql"]["server_root_password"] = "2d$eo1@eo%r"
+  def get_mysql_endpoint( role="mysql-master", server="mysql", service="db", options={} )
+    host = node["unmanaged"]["mysql"]["host"] rescue nil
+
+    if not host.nil?
+      return {
+        "host" => host,
+        "name" => server
+      }
+    end
+
+    get_access_endpoint(role, server, service, options)
+  end
+
   # Get the access endpoint for a role.
   #
   # If a role search returns no results, but the role is in our
@@ -184,7 +208,6 @@ module RCB
   # If the role search returns exactly one result, then use
   # the bind endpoint for the service according to that nodes attributes
   #
-
   def get_access_endpoint(role, server, service, options={})
     path = "#{role}/#{server}/#{service}"
     result = osops_search(
@@ -231,6 +254,27 @@ module RCB
       result.map(&:name).to_s)
 
     result.map { |nodeish| get_bind_endpoint(server, service, nodeish) }
+  end
+
+  # Get settings for the mysql rol.
+  #
+  # This is the same as calling:
+  #
+  #   get_settings_by_role("mysql-master", "mysql")
+  #
+  # with the additional override that allowes one to specify a non chef
+  # managed mysql server in the following attributes:
+  #
+  # node["unmanaged"]["mysql"]["host"] = "10.10.10.10"
+  # node["unmanaged"]["mysql"]["server_root_password"] = "2d$eo1@eo%r"
+  def get_mysql_settings(role="mysql-master", settings="mysql", includeme=true, options={})
+    host = node["unmanaged"]["mysql"]["host"] rescue nil
+
+    if not host.nil?
+      return node["unmanaged"]["mysql"]
+    end
+
+    get_settings_by_role(role, settings, includeme, options)
   end
 
   # Get a specific node hash from another node by role

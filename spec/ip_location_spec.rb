@@ -565,6 +565,110 @@ describe RCB do
     end
   end
 
+  describe "#get_mysql_endpoint" do
+    let(:query) { double(Chef::Search::Query) }
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+      query.stub("search").and_return([results, nil, nil])
+
+      node.set["roles"] = []
+      node.set["recipes"] = []
+
+      library.stub("node").and_return(node)
+    end
+
+    it "returns nil for no matching role, service, service" do
+      Chef::Log.should_receive("warn").
+        with(/cannot find mysql\/db for role mysql-master/i)
+
+      library.get_mysql_endpoint.should be_nil
+    end
+
+    context "with service information" do
+      let(:service_info) do
+        {
+          "name" => "myservice",
+          "network" => "management",
+          "path" => "/endpoints/foo",
+          "scheme" => "https",
+          "port" => "443",
+          "uri" => "http://localhost:80/endpoint"
+        }
+      end
+
+      before do
+        node.set["mysql"]["services"]["db"] = service_info
+        node.set["network"]["interfaces"]["eth0"]["addresses"] = {
+          "172.16.10.1" => { "family" => "inet" }
+        }
+        node.set["osops_networks"]["management"] = "172.16.0.0/16"
+      end
+
+      it "uses the node if the name matches the search result" do
+        results << node
+
+        library.get_mysql_endpoint.
+          should == {
+            "host" => "localhost",
+            "name" => "myservice",
+            "network" => "management",
+            "path" => "/endpoint",
+            "port" => 80,
+            "scheme" => "http",
+            "uri" => "http://localhost:80/endpoint"
+          }
+      end
+
+      it "uses attributes to override the search" do
+        node.set["unmanaged"]["mysql"]["host"] = "10.10.10.10"
+
+        library.get_mysql_endpoint.
+          should == {
+            "host" => "10.10.10.10",
+            "name" => "mysql"
+          }
+      end
+
+      it "uses the node if the role contains the search result" do
+        node.set["roles"] = ["mysql-master"]
+
+        library.get_mysql_endpoint.
+          should == {
+            "host" => "localhost",
+            "name" => "myservice",
+            "network" => "management",
+            "path" => "/endpoint",
+            "port" => 80,
+            "scheme" => "http",
+            "uri" => "http://localhost:80/endpoint"
+          }
+      end
+
+      it "find the lb vips for more than one result" do
+        node.set["vips"]["mysql-db"] = "172.16.10.10"
+        node.stub("name").and_return("first")
+
+        other_node = Chef::Node.new
+        other_node.stub("name").and_return("other_node")
+
+        results << node << other_node
+
+        library.get_mysql_endpoint.
+          should == {
+            "host" => "172.16.10.10",
+            "name" => "myservice",
+            "network" => "management",
+            "path" => "/endpoint",
+            "port" => 80,
+            "scheme" => "http",
+            "uri" => "http://172.16.10.10:80/endpoint"
+          }
+      end
+    end
+  end
+
   describe "#get_access_endpoint" do
     let(:query) { double(Chef::Search::Query) }
     let(:results) { [] }
@@ -727,6 +831,58 @@ describe RCB do
             "uri" => "http://localhost:80/endpoint"
           }]
       end
+    end
+  end
+
+  describe "#get_mysql_settings" do
+    let(:query) { double(Chef::Search::Query) }
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+      query.stub("search").and_return([results, nil, nil])
+
+      node.set["roles"] = []
+
+      library.stub("node").and_return(node)
+    end
+
+    it "returns nil for no search results" do
+      library.get_mysql_settings.should be_nil
+    end
+
+    it "includes itself if the node has the role" do
+      node.set["roles"] = ["mysql-master"]
+      node.set["mysql"] = "foop"
+
+      library.get_mysql_settings.should eq "foop"
+    end
+
+    it "uses unmanaged attributes if set" do
+      node.set["unmanaged"]["mysql"]["host"] = "10.10.10.10"
+      node.set["unmanaged"]["mysql"]["server_root_password"] = "overpass"
+
+      library.get_mysql_settings.should == {
+        "host" => "10.10.10.10",
+        "server_root_password" => "overpass"
+      }
+    end
+
+    it "remove node from results if includeme is false" do
+      node.set["roles"] = ["mysql-master"]
+      node.set["mysql"] = "foop"
+      results << node
+
+      library.get_mysql_settings("mysql-master", "mysql", includeme=false).should be_nil
+    end
+
+    it "gets information from node result" do
+      node = Chef::Node.new
+      node.set["roles"] = ["mysql-master"]
+      node.set["mysql"] = "foop"
+      results << node
+
+      library.get_mysql_settings.should eq "foop"
     end
   end
 
