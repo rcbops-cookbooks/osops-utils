@@ -22,10 +22,11 @@ require File.dirname(__FILE__) + "/ip_location"
 module RCB
   def create_db_and_user(db_vendor, db_name, username, pw, options = {})
     options = { :role => "mysql-master" }.merge(options)
+    role = options[:role]
 
     if db_vendor == "mysql"
-      connect_host = get_mysql_endpoint["host"]
-      mysql_info = get_mysql_settings
+      connect_host = get_mysql_endpoint(role)["host"]
+      mysql_info = get_mysql_settings(role)
 
       connection_info = { :host => connect_host,
         :username => "root",
