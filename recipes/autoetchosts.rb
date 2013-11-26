@@ -63,7 +63,7 @@ else
   hosts.each do |host|
     Chef::Log.info("osops-utils/autoetchosts: checking (#{host})")
     begin
-      ip = ::Chef::Recipe::IPManagement.get_ip_for_net("management", host)
+      ip = ::Chef::Recipe::IPManagement.get_ip_for_net("management", host, :log_errors => false)
       stra = String.new("#{ip}    #{host["fqdn"]} #{host["hostname"]}\n")
       hfile << stra
     rescue
