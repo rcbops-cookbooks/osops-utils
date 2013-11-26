@@ -20,7 +20,7 @@
 default["osops"]["apply_patches"] = false               # cluster_attribute
 default["osops"]["do_package_upgrades"] = false         # cluster_attribute
 
-default["region"] = "RegionOne"
+default["osops"]["region"] = "RegionOne"    # default OpenStack region
 
 # platform defaults
 case platform_family
