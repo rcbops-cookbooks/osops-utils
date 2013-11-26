@@ -43,8 +43,12 @@ module RCB
   # is specified, it overrides all other settings, otherwise it is
   # composed from the individual components
 
-  def rcb_exit_error(msg)
-    Chef::Log.error(msg)
+  def rcb_exit_error(msg, options = {})
+    log_errors = options.fetch(:log_errors, true)
+
+    if log_errors then
+      Chef::Log.error(msg)
+    end
     raise msg
   end
 
@@ -67,17 +71,17 @@ module RCB
   end
 
   # stub until we can migrate out the IPManagement stuff
-  def get_ip_for_net(network, nodeish = nil)
-    _, ip = get_if_ip_for_net(network, nodeish)
+  def get_ip_for_net(network, nodeish = nil, options = {})
+    _, ip = get_if_ip_for_net(network, nodeish, options)
     return ip
   end
 
-  def get_if_for_net(network, nodeish = nil)
-    iface, _ = get_if_ip_for_net(network, nodeish)
+  def get_if_for_net(network, nodeish = nil, options = {})
+    iface, _ = get_if_ip_for_net(network, nodeish, options)
     return iface
   end
 
-  def get_if_ip_for_net(network, nodeish = nil)
+  def get_if_ip_for_net(network, nodeish = nil, options = {})
     nodeish = node unless nodeish
 
     return "0.0.0.0" if network == "all"
@@ -86,7 +90,7 @@ module RCB
     if !(nodeish.has_key?("osops_networks") and
       nodeish["osops_networks"].has_key?(network)) then
 
-      rcb_exit_error "Can't find network #{network}"
+      rcb_exit_error("Can't find network #{network}", options)
     end
 
     net = IPAddr.new(node["osops_networks"][network])
@@ -106,7 +110,7 @@ module RCB
       end
     end
 
-    rcb_exit_error "Can't find address on network #{network} for node"
+    rcb_exit_error("Can't find address on network #{network} for node", options)
   end
 
   def get_config_endpoint(server, service, nodeish=nil, partial=false)
@@ -535,13 +539,17 @@ end
 class Chef::Recipe::IPManagement
   extend RCB
 
-  def self.rcb_exit_error(msg)
-    Chef::Log.error(msg)
+  def self.rcb_exit_error(msg, options = {})
+    log_errors = options.fetch(:log_errors, true)
+
+    if log_errors then
+      Chef::Log.error(msg)
+    end
     raise msg
   end
 
   # find the local ip for a host on a specific network
-  def self.get_ip_for_net(network, node)
+  def self.get_ip_for_net(network, node, options = {})
     ourname = "#{__method__}():"   # used in debug statements below
 
     # handle the simple cases
@@ -557,8 +565,7 @@ class Chef::Recipe::IPManagement
     end
 
     if ! (node.has_key?("osops_networks") and node["osops_networks"].has_key?(network)) then
-
-      rcb_exit_error "Network '#{network}' is not defined (check environment)"
+      rcb_exit_error("Network '#{network}' is not defined (check environment)", options)
     end
 
     # network number associated with this network
@@ -585,7 +592,7 @@ class Chef::Recipe::IPManagement
       end
     end
 
-    rcb_exit_error "Can't find address on network '#{network}' for node"
+    rcb_exit_error("Can't find address on network '#{network}' for node", options)
   end
 
   # find the realserver ips for a particular role

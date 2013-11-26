@@ -171,6 +171,15 @@ describe RCB do
         library.get_if_ip_for_net("localhost").should eq "127.0.0.1"
       end
 
+      it "doesn't log errors when option set" do
+        node.set["osops"] = {}
+
+        Chef::Log.should_not_receive("error").with(/can't find network/i)
+
+        expect { library.get_if_ip_for_net("nonet", nil, :log_errors => false) }.
+          to raise_error(/can't find network/i)
+      end
+
       it "logs and raises an error for no networks" do
         node.set["osops"] = {}
 
