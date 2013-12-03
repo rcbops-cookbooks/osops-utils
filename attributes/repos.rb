@@ -89,10 +89,10 @@ when "debian"
       "key" => "EC4926EA"
     },
     "rpc-extras" => {
-      "uri" => "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/",
+      "uri" => "http://download.opensuse.org/repositories/home:/rpcops:/havana/xUbuntu_12.04/",
       "distribution" => "/",
       "components" => [],
-      "key" => "http://download.opensuse.org/repositories/home:/rpcops/xUbuntu_12.04/Release.key"
+      "key" => "http://download.opensuse.org/repositories/home:/rpcops:/havana//xUbuntu_12.04/Release.key"
     }
   }
 
