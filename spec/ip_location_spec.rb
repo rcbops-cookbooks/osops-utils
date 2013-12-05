@@ -6,6 +6,151 @@ describe RCB do
   let(:library) { Object.new.extend(RCB) }
   let(:node) { Chef::Node.new }
 
+  describe "#osops_search" do
+    let(:current_node) do
+      node = Chef::Node.new
+      node.set["roles"] = []
+      node.set["recipes"] = []
+      node.set["tags"] = []
+      node.stub("name").and_return("current_node")
+      node
+    end
+    let(:query) { double(Chef::Search::Query) }
+    let(:result_node) do
+      node = Chef::Node.new
+      node.set["roles"] = []
+      node.set["recipes"] = []
+      node.set["tags"] = []
+      node.stub("name").and_return("result_node")
+      node
+    end
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+
+      library.stub("node").and_return(current_node)
+    end
+
+    context "with defaults" do
+      it "returns one result from roles" do
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term").should eq result_node
+      end
+
+      it "returns one result from recipes if roles returns nothing" do
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([[], nil, nil])
+
+        query.should_receive("search").
+          with(:node, "recipes:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term").should eq result_node
+      end
+
+      it "returns current node w/o searching if node has role" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_not_receive("search")
+
+        library.osops_search("term").should eq current_node
+      end
+
+      it "returns current node w/o searching recipes if node has recipe" do
+        current_node.set["recipes"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([[], nil, nil])
+
+        library.osops_search("term").should eq current_node
+      end
+    end
+
+    context "with include_me param disabled" do
+      it "ignores current node w/o searching if node has role" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term", :one, false).should eq result_node
+      end
+    end
+
+    context "with include_me option disabled" do
+      it "ignores current node w/o searching if node has role" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term", :one, true, [:role, :recipe], nil, nil, :include_me => false).should eq result_node
+      end
+    end
+
+    context "with one_or_all set to :all" do
+      it "returns all results" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        query.should_receive("search").
+          with(:node, "recipes:term AND chef_environment:_default").
+          and_return([[], nil, nil])
+
+        library.osops_search("term", :all).should eq [current_node, result_node]
+      end
+    end
+
+    context "with one_or_all options set to :all" do
+      it "returns all results" do
+        current_node.set["roles"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "roles:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        query.should_receive("search").
+          with(:node, "recipes:term AND chef_environment:_default").
+          and_return([[], nil, nil])
+
+        library.osops_search("term", :one, true, [:role, :recipe], nil, nil, :one_or_all => :all).should eq [current_node, result_node]
+      end
+    end
+
+    context "with order set to tags" do
+      it "searches tags instead" do
+        current_node.set["tags"] = ["term"]
+        results << result_node
+
+        query.should_receive("search").
+          with(:node, "tags:term AND chef_environment:_default").
+          and_return([results, nil, nil])
+
+        library.osops_search("term", :all, true, [:tag]).should eq [current_node, result_node]
+      end
+    end
+  end
 
   describe "#get_if_ip_for_net" do
     context "with a Chef::Node" do
@@ -155,6 +300,22 @@ describe RCB do
           to raise_error(/can't find network/i)
       end
 
+      it "skips an interface and ip for matching inet4 ip/32" do
+        node.set["network"]["interfaces"]["eth0"]["addresses"]["172.16.10.1"]["prefixlen"] = "32"
+        node.set["osops_networks"]["network"] = "172.16.0.0/16"
+
+        expect { library.get_ip_for_net("network") }.
+          to raise_error(/can't find address on network/i)
+      end
+
+      it "skips an interface and ip for matching inet6 ip/128" do
+        node.set["network"]["interfaces"]["eth0"]["addresses"]["21DA:00D3:0000:2F3B:02AA:00FF:FE28:9C5A"]["prefixlen"] = "128"
+        node.set["osops_networks"]["network"] = "21DA:00D3:0000:2F3B:02AA:00FF::/32"
+
+        expect { library.get_ip_for_net("network") }.
+          to raise_error(/can't find address on network/i)
+      end
+
       it "returns an interface and ip for matching inet4 network" do
         node.set["osops_networks"]["network"] = "172.16.0.0/16"
 
@@ -212,6 +373,7 @@ describe RCB do
   describe "#get_config_endpoint" do
     let(:service_info) do
       {
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "scheme" => "https",
@@ -242,6 +404,7 @@ describe RCB do
     it "returns the service info from the specified uri instead" do
       library.get_config_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoint",
         "port" => 80,
@@ -256,6 +419,7 @@ describe RCB do
 
       library.get_config_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "port" => "443",
@@ -268,6 +432,7 @@ describe RCB do
   describe "#get_bind_endpoint" do
     let(:service_info) do
       {
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "scheme" => "https",
@@ -295,6 +460,7 @@ describe RCB do
     it "returns the uri over any constitute parts" do
       library.get_bind_endpoint("myserver", "myservice").should == {
         "host" => "localhost",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoint",
         "port" => 80,
@@ -310,6 +476,7 @@ describe RCB do
 
       library.get_bind_endpoint("myserver", "myservice").should == {
         "host" => "172.16.10.1",
+        "name" => "myservice",
         "network" => "management",
         "path" => "/endpoints/foo",
         "port" => "443",
@@ -341,6 +508,7 @@ describe RCB do
     context "with vips and service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -362,6 +530,7 @@ describe RCB do
 
         library.get_lb_endpoint("myrole", "myserver", "myservice").should == {
           "host" => "172.16.10.10",
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoint",
           "port" => 80,
@@ -375,6 +544,7 @@ describe RCB do
 
         library.get_lb_endpoint("myrole", "myserver", "myservice").should == {
           "host" => "172.16.10.10",
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoint",
           "port" => 80,
@@ -422,6 +592,7 @@ describe RCB do
     context "with service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -444,6 +615,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -458,6 +630,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -478,6 +651,7 @@ describe RCB do
         library.get_access_endpoint("myrole", "myserver", "myservice").
           should == {
             "host" => "172.16.10.10",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -510,6 +684,7 @@ describe RCB do
     context "with service information" do
       let(:service_info) do
         {
+          "name" => "myservice",
           "network" => "management",
           "path" => "/endpoints/foo",
           "scheme" => "https",
@@ -532,6 +707,7 @@ describe RCB do
         library.get_realserver_endpoints("myrole", "myserver", "myservice").
           should == [{
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -546,6 +722,7 @@ describe RCB do
         library.get_realserver_endpoints("myrole", "myserver", "myservice").
           should == [{
             "host" => "localhost",
+            "name" => "myservice",
             "network" => "management",
             "path" => "/endpoint",
             "port" => 80,
@@ -616,7 +793,7 @@ describe RCB do
       library.get_role_count("unknown").should eq 0
     end
 
-    it "excludes node from results  if includeme is fals" do
+    it "excludes node from results if includeme is false" do
       results << node
 
       library.get_role_count("myrole", false).should eq 0
@@ -661,6 +838,32 @@ describe RCB do
     end
   end
 
+  describe "#get_nodes_by_role" do
+    let(:query) { double(Chef::Search::Query) }
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+      query.stub("search").and_return([results, nil, nil])
+
+      node.set["roles"] = []
+
+      library.stub("node").and_return(node)
+    end
+
+    it "returns [] for no search results" do
+      results = library.get_nodes_by_role("unknown")
+      results.should be_an_instance_of(Array)
+      results.should be_empty
+    end
+
+    it "returns the nodes if it includes the role" do
+      node.set["roles"] = ["myrole"]
+
+      library.get_nodes_by_role("myrole").should eq [node]
+    end
+  end
+
   describe "#get_nodes_by_recipe" do
     let(:query) { double(Chef::Search::Query) }
     let(:results) { [] }
@@ -684,6 +887,66 @@ describe RCB do
       node.set["recipes"] = ["myrecipe"]
 
       library.get_nodes_by_recipe("myrecipe").should eq [node]
+    end
+  end
+
+  describe "#get_settings_by_tag" do
+    let(:query) { double(Chef::Search::Query) }
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+      query.stub("search").and_return([results, nil, nil])
+
+      node.set["tags"] = []
+
+      library.stub("node").and_return(node)
+    end
+
+    it "returns nil for no search results" do
+      library.get_settings_by_tag("unknown", "unknown").should be_nil
+    end
+
+    it "returns the node settings if it includes the tag" do
+      node.set["tags"] = ["mytag"]
+      node.set["mysetting"]  = "foop"
+
+      library.get_settings_by_tag("mytag", "mysetting").should eq "foop"
+    end
+
+    it "returns the results settings" do
+      node = Chef::Node.new
+      node.set["tags"] = ["mytag"]
+      node.set["mysetting"]  = "foop"
+      results << node
+
+      library.get_settings_by_tag("mytag", "mysetting").should eq "foop"
+    end
+  end
+
+  describe "#get_nodes_by_tag" do
+    let(:query) { double(Chef::Search::Query) }
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+      query.stub("search").and_return([results, nil, nil])
+
+      node.set["tags"] = []
+
+      library.stub("node").and_return(node)
+    end
+
+    it "returns [] for no search results" do
+      results = library.get_nodes_by_tag("unknown")
+      results.should be_an_instance_of(Array)
+      results.should be_empty
+    end
+
+    it "returns the nodes if it includes the tag" do
+      node.set["tags"] = ["mytag"]
+
+      library.get_nodes_by_tag("mytag").should eq [node]
     end
   end
 end
@@ -762,6 +1025,103 @@ describe Chef::Recipe::IPManagement do
 
       expect { library.get_ip_for_net("network", node) }.
         to raise_error(/can't find address on network/i)
+    end
+  end
+
+  describe ".get_ips_for_recipe" do
+    let(:query) { double(Chef::Search::Query) }
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+      query.stub("search").and_return([results, nil, nil])
+
+      node.set["network"]["interfaces"]["eth0"]["addresses"] = {
+        "172.16.10.1" => { "family" => "inet" },
+        "21DA:00D3:0000:2F3B:02AA:00FF:FE28:9C5A" => { "family" => "inet6" }
+      }
+
+      node.set["recipes"] = ["myrecipe"]
+    end
+
+    it "returns 0.0.0.0 for all" do
+      library.get_ips_for_recipe("myrecipe", "all", node).should eq ["0.0.0.0"]
+    end
+
+    it "returns 127.0.0.1 for localhost" do
+      library.get_ips_for_recipe("myrecipe", "localhost", node).
+        should eq ["127.0.0.1"]
+    end
+
+    it "logs and raises an error for no networks" do
+      node.set["osops"] = {}
+
+      Chef::Log.should_receive("error").with(/network 'nonet' is not defined/i)
+
+      expect { library.get_ips_for_recipe("myrecipe", "nonet", node) }.
+        to raise_error(/network 'nonet' is not defined/i)
+    end
+
+    it "logs and raises an error for a missing network" do
+      Chef::Log.should_receive("error").with(/network 'nonet' is not defined/i)
+
+      expect { library.get_ips_for_recipe("myrecipe", "nonet", node) }.
+        to raise_error(/network 'nonet' is not defined/i)
+    end
+
+    it "returns an interface and ip for matching inet4 network" do
+      node.set["osops_networks"]["network"] = "172.16.0.0/16"
+
+      library.get_ips_for_recipe("myrecipe", "network", node).
+        should eq ["172.16.10.1"]
+    end
+
+    it "returns an interface and ip for matching inet6 network" do
+      node.set["osops_networks"]["network"] =
+        "21DA:00D3:0000:2F3B:02AA:00FF::/32"
+
+      library.get_ips_for_recipe("myrecipe", "network", node).
+        should eq ["21DA:00D3:0000:2F3B:02AA:00FF:FE28:9C5A"]
+    end
+
+    it "uses osops network mappings if available" do
+      node.set["osops_networks"]["network"] = "172.16.0.0/16"
+      node.set["osops_networks"]["mapping"]["mynetwork"] = "network"
+
+      library.get_ips_for_recipe("myrecipe", "mynetwork", node).
+        should eq ["172.16.10.1"]
+    end
+
+    it "raises an exception if no matching network is found" do
+      node.set["osops_networks"]["network"] = "10.10.0.0/16"
+
+      Chef::Log.should_receive("error").with(/can't find address on network/i)
+
+      expect { library.get_ips_for_recipe("myrecipe", "network", node) }.
+        to raise_error(/can't find address on network/i)
+    end
+
+    it "raises an exception if no addresses on interface" do
+      node.set["osops_networks"]["network"] = "10.10.0.0/16"
+      node.set["network"]["interfaces"]["eth0"] = {}
+
+      Chef::Log.should_receive("error").with(/can't find address on network/i)
+
+      expect { library.get_ips_for_recipe("myrecipe", "network", node) }.
+        to raise_error(/can't find address on network/i)
+    end
+
+    it "raises an exception if no recipes match" do
+      expect { library.get_ips_for_recipe("unknown", "network", node) }.
+        to raise_error(/can't find any candidates for search in recipe/i)
+    end
+
+    it "ignores recipes under chef solo" do
+      Chef::Config.stub("[]").and_return(true)
+
+      node.set["osops_networks"]["network"] = "172.16.0.0/16"
+
+      library.get_ips_for_recipe("unknown", "all", node).should eq ["0.0.0.0"]
     end
   end
 
@@ -849,11 +1209,8 @@ describe Chef::Recipe::IPManagement do
     end
 
     it "raises an exception if no roles match" do
-      #Chef::Log.should_receive("error").
-        #with(/can't find any candidates for role/i)
-
       expect { library.get_ips_for_role("unknown", "network", node) }.
-        to raise_error(/can't find any candidates for role/i)
+        to raise_error(/can't find any candidates for search in role/i)
     end
 
     it "ignores roles under chef solo" do
@@ -862,6 +1219,103 @@ describe Chef::Recipe::IPManagement do
       node.set["osops_networks"]["network"] = "172.16.0.0/16"
 
       library.get_ips_for_role("unknown", "all", node).should eq ["0.0.0.0"]
+    end
+  end
+
+  describe ".get_ips_for_tag" do
+    let(:query) { double(Chef::Search::Query) }
+    let(:results) { [] }
+
+    before do
+      Chef::Search::Query.stub("new").and_return(query)
+      query.stub("search").and_return([results, nil, nil])
+
+      node.set["network"]["interfaces"]["eth0"]["addresses"] = {
+        "172.16.10.1" => { "family" => "inet" },
+        "21DA:00D3:0000:2F3B:02AA:00FF:FE28:9C5A" => { "family" => "inet6" }
+      }
+
+      node.set["tags"] = ["mytag"]
+    end
+
+    it "returns 0.0.0.0 for all" do
+      library.get_ips_for_tag("mytag", "all", node).should eq ["0.0.0.0"]
+    end
+
+    it "returns 127.0.0.1 for localhost" do
+      library.get_ips_for_tag("mytag", "localhost", node).
+        should eq ["127.0.0.1"]
+    end
+
+    it "logs and raises an error for no networks" do
+      node.set["osops"] = {}
+
+      Chef::Log.should_receive("error").with(/network 'nonet' is not defined/i)
+
+      expect { library.get_ips_for_tag("mytag", "nonet", node) }.
+        to raise_error(/network 'nonet' is not defined/i)
+    end
+
+    it "logs and raises an error for a missing network" do
+      Chef::Log.should_receive("error").with(/network 'nonet' is not defined/i)
+
+      expect { library.get_ips_for_tag("mytag", "nonet", node) }.
+        to raise_error(/network 'nonet' is not defined/i)
+    end
+
+    it "returns an interface and ip for matching inet4 network" do
+      node.set["osops_networks"]["network"] = "172.16.0.0/16"
+
+      library.get_ips_for_tag("mytag", "network", node).
+        should eq ["172.16.10.1"]
+    end
+
+    it "returns an interface and ip for matching inet6 network" do
+      node.set["osops_networks"]["network"] =
+        "21DA:00D3:0000:2F3B:02AA:00FF::/32"
+
+      library.get_ips_for_tag("mytag", "network", node).
+        should eq ["21DA:00D3:0000:2F3B:02AA:00FF:FE28:9C5A"]
+    end
+
+    it "uses osops network mappings if available" do
+      node.set["osops_networks"]["network"] = "172.16.0.0/16"
+      node.set["osops_networks"]["mapping"]["mynetwork"] = "network"
+
+      library.get_ips_for_tag("mytag", "mynetwork", node).
+        should eq ["172.16.10.1"]
+    end
+
+    it "raises an exception if no matching network is found" do
+      node.set["osops_networks"]["network"] = "10.10.0.0/16"
+
+      Chef::Log.should_receive("error").with(/can't find address on network/i)
+
+      expect { library.get_ips_for_tag("mytag", "network", node) }.
+        to raise_error(/can't find address on network/i)
+    end
+
+    it "raises an exception if no addresses on interface" do
+      node.set["osops_networks"]["network"] = "10.10.0.0/16"
+      node.set["network"]["interfaces"]["eth0"] = {}
+
+      Chef::Log.should_receive("error").with(/can't find address on network/i)
+
+      expect { library.get_ips_for_tag("mytag", "network", node) }.
+        to raise_error(/can't find address on network/i)
+    end
+
+    it "raises an exception if no tags match" do
+      expect { library.get_ips_for_tag("unknown", "network", node) }.
+        to raise_error(/can't find any candidates for search in tag/i)
+    end
+
+    it "ignores tags under chef solo" do
+      Chef::Config.stub("[]").and_return(true)
+
+      node.set["osops_networks"]["network"] = "172.16.0.0/16"
+
+      library.get_ips_for_tag("unknown", "all", node).should eq ["0.0.0.0"]
     end
   end
 
