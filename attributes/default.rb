@@ -22,6 +22,9 @@ default["osops"]["do_package_upgrades"] = false         # cluster_attribute
 
 default["osops"]["region"] = "RegionOne"    # default OpenStack region
 
+# Must be integer. Example: 256000
+default["osops"]["sysctl"]["nf_conntrack_max"] = nil
+
 # platform defaults
 case platform_family
 when "rhel"
