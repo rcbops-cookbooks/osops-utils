@@ -39,4 +39,5 @@ suites:
   - recipe[osops-utils_test::default]
   - recipe[osops-utils_test::packages]
   - recipe[osops-utils_test::autoetchosts]
+  - recipe[osops-utils_test::version]
   attributes: {}
