@@ -21,5 +21,5 @@ include_recipe "modules"
 modules "vhost_net" do
   action :save
   only_if "modinfo vhost_net"
-  notifies :restart, "service[modules-load]", :delayed
+  notifies :start, "service[modules-load]", :delayed
 end
