@@ -27,7 +27,7 @@ case node["platform"]
       only_if "modinfo #{vhost_net}"
       notifies :run, "execute[load_module]", :delayed
     end
-  when "fedora", "redhat", "centos"
+  when "centos", "redhat", "amazon", "scientific"
     rhel_module = "/etc/sysconfig/modules/#{vhost_net}.modules"
     execute "module_persist" do
       command <<-EOH
