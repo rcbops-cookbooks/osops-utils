@@ -9,7 +9,7 @@ version          IO.read(File.join(File.dirname(__FILE__), 'VERSION'))
   supports os
 end
 
-%w{ apt sysctl yum }.each do |dep|
+%w{ apt sysctl yum modules }.each do |dep|
   depends dep
 end
 
