@@ -33,6 +33,8 @@ default['osops']['rcb']['testing-url']=nil
 default["osops"]["yum_repository"]["openstack"] =
   "http://repos.fedorapeople.org/repos/openstack/openstack-grizzly/epel-6"
 
+default["osops"]["region"] = "RegionOne"    # default OpenStack region
+
 # platform defaults
 case platform_family
 when "rhel"
