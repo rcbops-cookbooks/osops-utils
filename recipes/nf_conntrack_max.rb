@@ -18,7 +18,7 @@
 #
 
 nf_conntrack_max = node["osops"]["sysctl"]["nf_conntrack_max"]
-if nf_conntrack_max && nf_conntrack_max.is_a?(Integer)
+if nf_conntrack_max
   include_recipe "sysctl::default"
   nf_conntracks = ["net.nf_conntrack_max", "net.netfilter.nf_conntrack_max"]
   nf_conntracks.each do |conntrack|
