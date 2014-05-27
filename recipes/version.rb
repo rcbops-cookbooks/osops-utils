@@ -18,8 +18,10 @@
 #
 
 # drop the version of this converged release into a file for support purposes
+version_string = run_context.cookbook_collection[cookbook_name].metadata.version
+
 file "/etc/rpc-release" do
-  content run_context.cookbook_collection[cookbook_name].metadata.version
+  content "#{version_string}\n"
   mode "0644"
   owner "root"
   group "root"
