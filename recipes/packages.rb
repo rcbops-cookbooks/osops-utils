@@ -87,6 +87,11 @@ when "rhel"
     end
   end
 
+  execute "makecache-before-upgrades" do
+    action :run
+    command "yum -q -y makecache"
+    only_if { node["osops"]["do_package_upgrades"] == true }
+  end
 when "debian"
   include_recipe "apt"
 
@@ -132,4 +137,10 @@ when "debian"
       end
     end
   end #if node["enable_testing_repos"] == true
+
+  execute "apt-get-update-before-upgrades" do
+    action :run
+    command "apt-get -y -q update"
+    only_if { node["osops"]["do_package_upgrades"] == true }
+  end
 end #case node["platform_family"]
